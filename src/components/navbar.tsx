@@ -1,8 +1,13 @@
-"use client";
-
 import Link from "next/link";
+import { signout } from "~/app/auth/actions";
+import { createClient } from "~/lib/supabase/server";
 
-export function Navbar() {
+export async function Navbar() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   return (
     <nav className="sticky top-0 z-50 border-b border-border bg-background">
       <div className="grid h-18 grid-cols-3 items-center px-6 lg:px-16">
@@ -31,20 +36,49 @@ export function Navbar() {
           </a>
         </div>
 
-        {/* Right — Log in + Get started */}
+        {/* Right — auth buttons */}
         <div className="flex items-center justify-end gap-4">
-          <Link
-            href="/login"
-            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-          >
-            Log in
-          </Link>
-          <Link
-            href="/signup"
-            className="rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-700"
-          >
-            Get started
-          </Link>
+          {user ? (
+            <>
+              <Link
+                href="/dashboard"
+                className="rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-700"
+              >
+                Dashboard
+              </Link>
+              {user.app_metadata?.role === "admin" && (
+                <Link
+                  href="/admin"
+                  className="rounded-lg border border-border px-4 py-2 text-sm font-semibold transition-colors hover:bg-muted"
+                >
+                  Admin
+                </Link>
+              )}
+              <form action={signout}>
+                <button
+                  type="submit"
+                  className="rounded-lg border border-border px-4 py-2 text-sm font-semibold transition-colors hover:bg-muted"
+                >
+                  Sign out
+                </button>
+              </form>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+              >
+                Log in
+              </Link>
+              <Link
+                href="/signup"
+                className="rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-700"
+              >
+                Get started
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </nav>

@@ -6,7 +6,6 @@ export const env = createEnv({
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
-    // Server-only Supabase vars can go here if needed
   },
   client: {
     NEXT_PUBLIC_SUPABASE_URL: z.string().url(),
