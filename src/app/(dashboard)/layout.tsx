@@ -17,6 +17,18 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
+  // First-run gate: users who haven't finished onboarding are sent to collect
+  // the basic profile info the app needs before they can use the dashboard.
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("onboarding_completed")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (!profile?.onboarding_completed) {
+    redirect("/onboarding");
+  }
+
   return (
     <div className="flex min-h-screen bg-muted/30">
       <DashboardSidebar />
