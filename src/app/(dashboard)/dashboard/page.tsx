@@ -7,6 +7,8 @@ import {
   RestartIcon,
   UploadIcon,
 } from "~/components/dashboard/icons";
+import { GOALS } from "~/lib/onboarding";
+import { createClient } from "~/lib/supabase/server";
 import { cn } from "~/lib/utils";
 
 function Card({
@@ -58,7 +60,24 @@ function EmptyState({
   );
 }
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("daily_calorie_target, goal")
+    .eq("id", user?.id ?? "")
+    .maybeSingle();
+
+  const target: number | null = profile?.daily_calorie_target ?? null;
+  // No meals logged yet, so consumed is 0 for now.
+  const consumed = 0;
+  const remaining = target !== null ? target - consumed : null;
+  const goalLabel = GOALS.find((g) => g.value === profile?.goal)?.label ?? null;
+
   return (
     <div className="mx-auto max-w-7xl">
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_340px]">
@@ -73,25 +92,32 @@ export default function DashboardPage() {
                 </p>
                 <p className="mt-1 flex items-baseline gap-1.5">
                   <span className="text-4xl font-bold tracking-tight">
-                    &mdash;
+                    {consumed.toLocaleString()}
                   </span>
+                  {target !== null && (
+                    <span className="text-lg font-medium text-muted-foreground">
+                      / {target.toLocaleString()}
+                    </span>
+                  )}
                   <span className="text-lg font-semibold text-orange-600">
                     kcal
                   </span>
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  No daily goal set yet
+                  {target !== null
+                    ? `Daily goal: ${target.toLocaleString()} kcal${goalLabel ? ` · ${goalLabel}` : ""}`
+                    : "No daily goal set yet"}
                 </p>
               </div>
 
               <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
+                <Link
+                  href="/scan"
                   className="flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-700"
                 >
                   <UploadIcon className="size-4" />
                   Upload Photo
-                </button>
+                </Link>
                 <button
                   type="button"
                   className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted"
@@ -112,8 +138,13 @@ export default function DashboardPage() {
             <div className="mt-6 grid grid-cols-3 divide-x divide-border border-t border-border pt-5">
               <div className="px-2 text-center sm:px-4 sm:text-left">
                 <p className="text-xs text-muted-foreground">Remaining</p>
-                <p className="mt-0.5 text-lg font-bold text-muted-foreground">
-                  &mdash;
+                <p
+                  className={cn(
+                    "mt-0.5 text-lg font-bold",
+                    remaining === null && "text-muted-foreground",
+                  )}
+                >
+                  {remaining !== null ? remaining.toLocaleString() : "—"}
                 </p>
               </div>
               <div className="px-2 text-center sm:px-4 sm:text-left">
@@ -161,20 +192,44 @@ export default function DashboardPage() {
           {/* Daily goal */}
           <Card>
             <h2 className="font-semibold">Daily goal</h2>
-            <EmptyState
-              icon={GoalsIcon}
-              title="No goal set"
-              hint="Set a daily calorie target in your settings to track progress."
-              action={
+            {target !== null ? (
+              <div className="flex flex-col items-center gap-1 py-8 text-center">
+                <span className="flex items-baseline gap-1.5">
+                  <span className="text-4xl font-bold tracking-tight text-orange-600">
+                    {target.toLocaleString()}
+                  </span>
+                  <span className="text-sm font-semibold text-muted-foreground">
+                    kcal
+                  </span>
+                </span>
+                <p className="text-sm text-muted-foreground">
+                  {goalLabel
+                    ? `Personalized for your goal to ${goalLabel.toLowerCase()}`
+                    : "Your personalized daily target"}
+                </p>
                 <Link
                   href="/settings"
-                  className="mt-1 rounded-lg border border-orange-600 px-4 py-2 text-sm font-semibold text-orange-600 transition-colors hover:bg-orange-50 dark:hover:bg-orange-950/40"
+                  className="mt-3 rounded-lg border border-border px-4 py-2 text-xs font-medium transition-colors hover:bg-muted"
                 >
-                  Go to Settings
+                  Adjust in Settings
                 </Link>
-              }
-              className="px-0 py-8"
-            />
+              </div>
+            ) : (
+              <EmptyState
+                icon={GoalsIcon}
+                title="No goal set"
+                hint="Set a daily calorie target in your settings to track progress."
+                action={
+                  <Link
+                    href="/settings"
+                    className="mt-1 rounded-lg border border-orange-600 px-4 py-2 text-sm font-semibold text-orange-600 transition-colors hover:bg-orange-50 dark:hover:bg-orange-950/40"
+                  >
+                    Go to Settings
+                  </Link>
+                }
+                className="px-0 py-8"
+              />
+            )}
           </Card>
 
           {/* Kitchen */}

@@ -28,9 +28,9 @@ export async function signup(formData: FormData) {
     redirect(`/signup?error=${encodeURIComponent(error.message)}`);
   }
 
-  redirect(
-    `/signup?message=${encodeURIComponent("Check your email to confirm your account before signing in.")}`,
-  );
+  // Email confirmation is disabled, so sign-up creates a session immediately.
+  // Send the user into the app; the dashboard gate routes them to onboarding.
+  redirect("/dashboard");
 }
 
 export async function signout() {
