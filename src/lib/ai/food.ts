@@ -28,6 +28,20 @@ const gateway = createGateway({ apiKey: env.AI_GATEWAY_API_KEY });
 // "openai/gpt-5.4-nano" here if you'd rather use OpenAI.
 const MODEL = "google/gemini-2.5-flash";
 
+/**
+ * Build an AI SDK `file` content part from a base64 image data URL. Parses the
+ * media type out of the data URL so the part is `{ type: "file", mediaType,
+ * data }` — the non-deprecated replacement for the old `image` content part.
+ */
+function imageFilePart(imageDataUrl: string) {
+  const match = /^data:([^;]+);base64,([\s\S]*)$/.exec(imageDataUrl);
+  return {
+    type: "file" as const,
+    mediaType: match?.[1] ?? "image/jpeg",
+    data: match?.[2] ?? imageDataUrl,
+  };
+}
+
 const questionSchema = z.object({
   id: z
     .string()
@@ -138,7 +152,7 @@ export async function analyzeFoodImage(imageDataUrl: string) {
             type: "text",
             text: "Here is a photo of my meal. Identify it and give me the follow-up questions you need to estimate its macros accurately.",
           },
-          { type: "image", image: imageDataUrl },
+          imageFilePart(imageDataUrl),
         ],
       },
     ],
@@ -179,7 +193,7 @@ ${answerBlock}
 
 Using the photo and these answers, estimate the macros for this portion.`,
           },
-          { type: "image", image: imageDataUrl },
+          imageFilePart(imageDataUrl),
         ],
       },
     ],
