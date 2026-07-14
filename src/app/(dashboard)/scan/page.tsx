@@ -1,16 +1,16 @@
-import { ScanIcon } from "~/components/dashboard/icons";
+import { ScanFlow } from "./scan-flow";
 
 export default function ScanPage() {
   return (
-    <div className="mx-auto flex max-w-2xl flex-col items-center justify-center gap-4 py-24 text-center">
-      <span className="flex size-14 items-center justify-center rounded-full bg-muted text-muted-foreground">
-        <ScanIcon className="size-7" />
-      </span>
-      <h1 className="text-2xl font-bold tracking-tight">Scan Meal</h1>
-      <p className="max-w-sm text-sm text-muted-foreground">
-        Upload a photo of your meal to get an accurate calorie count. This
-        feature is coming soon.
-      </p>
+    <div className="mx-auto max-w-4xl">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold tracking-tight">Scan Meal</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Upload a photo and let AI estimate the macros — with a special focus
+          on South Asian home cooking.
+        </p>
+      </div>
+      <ScanFlow />
     </div>
   );
 }
