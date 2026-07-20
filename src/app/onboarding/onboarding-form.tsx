@@ -50,6 +50,18 @@ export function OnboardingForm() {
 
   const ageNum = Number(age);
 
+  // App-styled age validation so we show our own inline message instead of the
+  // browser's native "Value must be greater than or equal to 18" tooltip. The
+  // wording mirrors the server's so the field and banner never disagree.
+  const ageError =
+    age === "" || !Number.isFinite(ageNum)
+      ? null
+      : ageNum < 18
+        ? "You must be 18 or older to use the app."
+        : ageNum > 120
+          ? "Please enter a valid age."
+          : null;
+
   // Enough valid input to show a live estimate. NOT used to gate submission —
   // the server is the source of truth and returns field-specific errors.
   const canEstimate =
@@ -57,7 +69,8 @@ export function OnboardingForm() {
     sex !== "" &&
     activityLevel !== "" &&
     Number.isFinite(ageNum) &&
-    ageNum >= 13 &&
+    ageNum >= 18 &&
+    ageNum <= 120 &&
     Number.isFinite(heightCm) &&
     heightCm >= 50 &&
     Number.isFinite(weightKg) &&
@@ -215,7 +228,9 @@ export function OnboardingForm() {
       {/* Age */}
       <div
         className="space-y-1.5"
-        data-invalid={showErrors && missing.age ? "true" : undefined}
+        data-invalid={
+          (showErrors && missing.age) || ageError ? "true" : undefined
+        }
       >
         <label htmlFor="age" className="text-sm font-medium">
           Age
@@ -224,17 +239,17 @@ export function OnboardingForm() {
           id="age"
           name="age"
           type="number"
-          min={13}
-          max={120}
           inputMode="numeric"
           value={age}
           onChange={(e) => setAge(e.target.value)}
           placeholder="e.g. 28"
-          className={field(showErrors && missing.age)}
+          className={field((showErrors && missing.age) || Boolean(ageError))}
         />
-        {showErrors && missing.age && (
+        {showErrors && missing.age ? (
           <p className="text-xs text-red-600">Please enter your age.</p>
-        )}
+        ) : ageError ? (
+          <p className="text-xs text-red-600">{ageError}</p>
+        ) : null}
       </div>
 
       {/* Units toggle */}

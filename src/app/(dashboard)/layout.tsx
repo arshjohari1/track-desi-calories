@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { DashboardSidebar } from "~/components/dashboard/sidebar";
 import { DashboardTopbar } from "~/components/dashboard/topbar";
+import { fetchMealDaySummaries } from "~/lib/meals";
 import { createClient } from "~/lib/supabase/server";
 
 export default async function DashboardLayout({
@@ -29,11 +30,13 @@ export default async function DashboardLayout({
     redirect("/onboarding");
   }
 
+  const days = await fetchMealDaySummaries(supabase, user.id);
+
   return (
     <div className="flex min-h-screen bg-muted/30">
       <DashboardSidebar />
       <div className="flex min-w-0 flex-1 flex-col">
-        <DashboardTopbar email={user.email ?? ""} />
+        <DashboardTopbar email={user.email ?? ""} days={days} />
         <main className="flex-1 px-4 py-6 lg:px-8">{children}</main>
       </div>
     </div>
