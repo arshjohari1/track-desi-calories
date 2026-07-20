@@ -1,16 +1,91 @@
-import { LogsIcon } from "~/components/dashboard/icons";
+import Link from "next/link";
+import { LogsIcon, UploadIcon } from "~/components/dashboard/icons";
+import { MealRow } from "~/components/dashboard/meal-row";
+import { fetchMeals, groupMealsByDay } from "~/lib/meals";
+import { createClient } from "~/lib/supabase/server";
+import { DeleteMealButton } from "./delete-meal-button";
 
-export default function LogsPage() {
+export default async function LogsPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const meals = await fetchMeals(supabase, user?.id ?? "", { limit: 100 });
+  const days = groupMealsByDay(meals);
+
+  if (days.length === 0) {
+    return (
+      <div className="mx-auto flex max-w-2xl flex-col items-center justify-center gap-4 py-24 text-center">
+        <span className="flex size-14 items-center justify-center rounded-full bg-muted text-muted-foreground">
+          <LogsIcon className="size-7" />
+        </span>
+        <h1 className="text-2xl font-bold tracking-tight">Logs</h1>
+        <p className="max-w-sm text-sm text-muted-foreground">
+          Your meal history and daily totals will appear here once you start
+          logging.
+        </p>
+        <Link
+          href="/scan"
+          className="mt-1 flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-700"
+        >
+          <UploadIcon className="size-4" />
+          Scan your first meal
+        </Link>
+      </div>
+    );
+  }
+
   return (
-    <div className="mx-auto flex max-w-2xl flex-col items-center justify-center gap-4 py-24 text-center">
-      <span className="flex size-14 items-center justify-center rounded-full bg-muted text-muted-foreground">
-        <LogsIcon className="size-7" />
-      </span>
-      <h1 className="text-2xl font-bold tracking-tight">Logs</h1>
-      <p className="max-w-sm text-sm text-muted-foreground">
-        Your meal history and daily totals will appear here once you start
-        logging.
-      </p>
+    <div className="mx-auto max-w-3xl">
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Logs</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Every meal you&apos;ve logged, grouped by day with daily totals.
+          </p>
+        </div>
+        <Link
+          href="/scan"
+          className="flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-700"
+        >
+          <UploadIcon className="size-4" />
+          Log a meal
+        </Link>
+      </div>
+
+      <div className="flex flex-col gap-6">
+        {days.map((day) => (
+          <section
+            key={day.key}
+            className="overflow-hidden rounded-xl border border-border bg-card shadow-sm"
+          >
+            <div className="flex items-center justify-between border-b border-border px-5 py-3">
+              <h2 className="font-semibold">{day.label}</h2>
+              <span className="text-sm text-muted-foreground">
+                {day.meals.length} {day.meals.length === 1 ? "meal" : "meals"} ·{" "}
+                <span className="font-semibold text-foreground">
+                  {Math.round(day.total).toLocaleString()} kcal
+                </span>
+              </span>
+            </div>
+            <div className="divide-y divide-border">
+              {day.meals.map((meal) => (
+                <MealRow
+                  key={meal.id}
+                  meal={meal}
+                  action={
+                    <DeleteMealButton
+                      mealId={meal.id}
+                      dishName={meal.dishName}
+                    />
+                  }
+                />
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
     </div>
   );
 }

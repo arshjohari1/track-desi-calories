@@ -1,11 +1,21 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useRef, useState } from "react";
-import { ScanIcon, SpiceIcon, UploadIcon } from "~/components/dashboard/icons";
+import {
+  CheckIcon,
+  LogsIcon,
+  PlusIcon,
+  ScanIcon,
+  SpiceIcon,
+  UploadIcon,
+} from "~/components/dashboard/icons";
 import type { FoodAnalysis, FoodMacros } from "~/lib/ai/food";
 import { cn } from "~/lib/utils";
+import { logMeal } from "./actions";
 
 type Step = "upload" | "analyzing" | "questions" | "estimating" | "result";
+type LogState = "idle" | "saving" | "saved";
 
 /**
  * Shrinks a photo to a max dimension and re-encodes as JPEG so the upload stays
@@ -77,6 +87,8 @@ export function ScanFlow() {
   const [macros, setMacros] = useState<FoodMacros | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
+  const [logState, setLogState] = useState<LogState>("idle");
+  const [logError, setLogError] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -87,7 +99,36 @@ export function ScanFlow() {
     setAnswers({});
     setMacros(null);
     setError(null);
+    setLogState("idle");
+    setLogError(null);
   }, []);
+
+  const handleLog = useCallback(async () => {
+    if (!macros) return;
+    setLogError(null);
+    setLogState("saving");
+    const result = await logMeal({
+      image: imageUrl,
+      dishName: macros.dishName,
+      servingSummary: macros.servingSummary,
+      cuisine: analysis?.cuisine ?? null,
+      isSouthAsian: analysis?.isSouthAsian ?? false,
+      calories: macros.calories,
+      protein: macros.protein,
+      carbs: macros.carbs,
+      fat: macros.fat,
+      fiber: macros.fiber,
+      confidence: macros.confidence,
+      assumptions: macros.assumptions,
+      tip: macros.tip,
+    });
+    if (result.ok) {
+      setLogState("saved");
+    } else {
+      setLogState("idle");
+      setLogError(result.error);
+    }
+  }, [macros, imageUrl, analysis]);
 
   const handleFile = useCallback(async (file: File) => {
     if (!file.type.startsWith("image/")) {
@@ -451,26 +492,86 @@ export function ScanFlow() {
             </div>
           )}
 
-          <div className="flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={reset}
-              className="flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-700"
-            >
-              <UploadIcon className="size-4" />
-              Scan another meal
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setMacros(null);
-                setStep("questions");
-              }}
-              className="rounded-lg border border-border px-4 py-2.5 text-sm font-medium transition-colors hover:bg-muted"
-            >
-              Adjust answers
-            </button>
-          </div>
+          {logError && (
+            <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-900 dark:bg-red-950 dark:text-red-400">
+              {logError}
+            </p>
+          )}
+
+          {logState === "saved" ? (
+            <div className="flex flex-col gap-3 rounded-xl border border-green-600/30 bg-green-600/5 p-5">
+              <div className="flex items-center gap-2 font-semibold text-green-700 dark:text-green-400">
+                <CheckIcon className="size-5" />
+                Logged to your day
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {Math.round(macros.calories).toLocaleString()} kcal added to
+                today&apos;s total. It&apos;s in your recent meals and logs now.
+              </p>
+              <div className="flex flex-wrap gap-3 pt-1">
+                <Link
+                  href="/dashboard"
+                  className="rounded-lg bg-orange-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-700"
+                >
+                  View dashboard
+                </Link>
+                <Link
+                  href="/logs"
+                  className="flex items-center gap-2 rounded-lg border border-border px-4 py-2.5 text-sm font-medium transition-colors hover:bg-muted"
+                >
+                  <LogsIcon className="size-4" />
+                  Open logs
+                </Link>
+                <button
+                  type="button"
+                  onClick={reset}
+                  className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <UploadIcon className="size-4" />
+                  Scan another
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={handleLog}
+                disabled={logState === "saving"}
+                className="flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {logState === "saving" ? (
+                  <>
+                    <Spinner />
+                    Logging…
+                  </>
+                ) : (
+                  <>
+                    <PlusIcon className="size-4" />
+                    Log this meal
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMacros(null);
+                  setStep("questions");
+                }}
+                className="rounded-lg border border-border px-4 py-2.5 text-sm font-medium transition-colors hover:bg-muted"
+              >
+                Adjust answers
+              </button>
+              <button
+                type="button"
+                onClick={reset}
+                className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                <UploadIcon className="size-4" />
+                Scan another meal
+              </button>
+            </div>
+          )}
 
           <p className="text-center text-xs text-muted-foreground">
             AI estimate — actual values vary with ingredients and preparation.

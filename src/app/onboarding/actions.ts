@@ -13,7 +13,7 @@ const onboardingSchema = z.object({
   age: z.coerce
     .number()
     .int("Age must be a whole number.")
-    .min(13, "You must be at least 13 to use the app.")
+    .min(18, "You must be 18 or older to use the app.")
     .max(120, "Please enter a valid age."),
   heightCm: z.coerce
     .number()

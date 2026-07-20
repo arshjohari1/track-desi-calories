@@ -7,9 +7,16 @@ import {
   RestartIcon,
   UploadIcon,
 } from "~/components/dashboard/icons";
-import { GOALS } from "~/lib/onboarding";
+import { MealRow } from "~/components/dashboard/meal-row";
+import { formatDayLabel, parseDateParam, startOfDay } from "~/lib/date";
+import { getCalorieStatus } from "~/lib/goal-status";
+import { fetchMeals, sumCalories } from "~/lib/meals";
+import { GOALS, type Goal } from "~/lib/onboarding";
 import { createClient } from "~/lib/supabase/server";
 import { cn } from "~/lib/utils";
+
+// Status highlights use the app's brand orange in every state — no green.
+const STATUS_ACCENT = "text-orange-700 dark:text-orange-400";
 
 function Card({
   className,
@@ -60,23 +67,59 @@ function EmptyState({
   );
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ date?: string }>;
+}) {
+  const { date } = await searchParams;
+  const selectedDay = parseDateParam(date) ?? startOfDay();
+  const dayEnd = new Date(selectedDay);
+  dayEnd.setDate(dayEnd.getDate() + 1);
+  const isToday = selectedDay.getTime() === startOfDay().getTime();
+  const dayLabel = formatDayLabel(selectedDay);
+
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("daily_calorie_target, goal")
-    .eq("id", user?.id ?? "")
-    .maybeSingle();
+  const userId = user?.id ?? "";
+
+  const [{ data: profile }, dayMeals, recentMeals] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("daily_calorie_target, goal")
+      .eq("id", userId)
+      .maybeSingle(),
+    fetchMeals(supabase, userId, { since: selectedDay, until: dayEnd }),
+    fetchMeals(supabase, userId, { limit: 5 }),
+  ]);
 
   const target: number | null = profile?.daily_calorie_target ?? null;
-  // No meals logged yet, so consumed is 0 for now.
-  const consumed = 0;
+  const consumed = Math.round(sumCalories(dayMeals));
   const remaining = target !== null ? target - consumed : null;
   const goalLabel = GOALS.find((g) => g.value === profile?.goal)?.label ?? null;
+
+  // Goal-aware status once there's something logged; drives the message and the
+  // Remaining tile (so going over reads as "Over by X", not a scary "-X").
+  const status =
+    target !== null && dayMeals.length > 0
+      ? getCalorieStatus(
+          (profile?.goal as Goal | null) ?? null,
+          target,
+          consumed,
+        )
+      : null;
+
+  const remainingDisplay =
+    target === null
+      ? "—"
+      : status?.state === "on-target"
+        ? "On target"
+        : status?.state === "over"
+          ? status.diff.toLocaleString()
+          : (remaining ?? 0).toLocaleString();
 
   return (
     <div className="mx-auto max-w-7xl">
@@ -88,7 +131,7 @@ export default async function DashboardPage() {
             <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
-                  Today&apos;s Calories
+                  {isToday ? "Today's Calories" : `Calories · ${dayLabel}`}
                 </p>
                 <p className="mt-1 flex items-baseline gap-1.5">
                   <span className="text-4xl font-bold tracking-tight">
@@ -103,11 +146,17 @@ export default async function DashboardPage() {
                     kcal
                   </span>
                 </p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {target !== null
-                    ? `Daily goal: ${target.toLocaleString()} kcal${goalLabel ? ` · ${goalLabel}` : ""}`
-                    : "No daily goal set yet"}
-                </p>
+                {status && isToday ? (
+                  <p className={cn("mt-1 text-sm font-medium", STATUS_ACCENT)}>
+                    {status.message}
+                  </p>
+                ) : (
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {target !== null
+                      ? `Daily goal: ${target.toLocaleString()} kcal${goalLabel ? ` · ${goalLabel}` : ""}`
+                      : "No daily goal set yet"}
+                  </p>
+                )}
               </div>
 
               <div className="flex flex-wrap gap-2">
@@ -137,19 +186,24 @@ export default async function DashboardPage() {
 
             <div className="mt-6 grid grid-cols-3 divide-x divide-border border-t border-border pt-5">
               <div className="px-2 text-center sm:px-4 sm:text-left">
-                <p className="text-xs text-muted-foreground">Remaining</p>
+                <p className="text-xs text-muted-foreground">
+                  {status?.state === "over" ? "Over goal" : "Remaining"}
+                </p>
                 <p
                   className={cn(
                     "mt-0.5 text-lg font-bold",
-                    remaining === null && "text-muted-foreground",
+                    target === null && "text-muted-foreground",
+                    (status?.state === "over" ||
+                      status?.state === "on-target") &&
+                      STATUS_ACCENT,
                   )}
                 >
-                  {remaining !== null ? remaining.toLocaleString() : "—"}
+                  {remainingDisplay}
                 </p>
               </div>
               <div className="px-2 text-center sm:px-4 sm:text-left">
                 <p className="text-xs text-muted-foreground">Logged meals</p>
-                <p className="mt-0.5 text-lg font-bold">0</p>
+                <p className="mt-0.5 text-lg font-bold">{dayMeals.length}</p>
               </div>
               <div className="px-2 text-center sm:px-4 sm:text-left">
                 <p className="text-xs text-muted-foreground">Saved recipes</p>
@@ -162,27 +216,70 @@ export default async function DashboardPage() {
           <Card className="p-0">
             <div className="flex items-center justify-between border-b border-border px-5 py-4">
               <h2 className="font-semibold">Recent meals</h2>
+              {recentMeals.length > 0 && (
+                <Link
+                  href="/logs"
+                  className="text-sm font-medium text-orange-600 transition-colors hover:text-orange-700"
+                >
+                  View all
+                </Link>
+              )}
             </div>
-            <EmptyState
-              icon={LogsIcon}
-              title="No meals logged yet"
-              hint="Upload a photo of your meal to log your first entry."
-            />
+            {recentMeals.length > 0 ? (
+              <div className="divide-y divide-border">
+                {recentMeals.map((meal) => (
+                  <MealRow key={meal.id} meal={meal} />
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon={LogsIcon}
+                title="No meals logged yet"
+                hint="Upload a photo of your meal to log your first entry."
+                action={
+                  <Link
+                    href="/scan"
+                    className="mt-1 flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-700"
+                  >
+                    <UploadIcon className="size-4" />
+                    Scan a meal
+                  </Link>
+                }
+              />
+            )}
           </Card>
 
-          {/* Today's meals */}
+          {/* Selected day's meals */}
           <Card className="p-0">
             <div className="border-b border-border px-5 py-4">
-              <h2 className="font-semibold">Today&apos;s meals</h2>
+              <h2 className="font-semibold">
+                {isToday ? "Today's meals" : `Meals · ${dayLabel}`}
+              </h2>
             </div>
-            <EmptyState
-              icon={KitchenIcon}
-              title="Nothing logged today"
-              hint="Your breakfast, lunch, snacks, and dinner will show up here."
-            />
+            {dayMeals.length > 0 ? (
+              <div className="divide-y divide-border">
+                {dayMeals.map((meal) => (
+                  <MealRow key={meal.id} meal={meal} />
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon={KitchenIcon}
+                title={
+                  isToday ? "Nothing logged today" : `No meals on ${dayLabel}`
+                }
+                hint={
+                  isToday
+                    ? "Your breakfast, lunch, snacks, and dinner will show up here."
+                    : undefined
+                }
+              />
+            )}
             <div className="flex items-center justify-between border-t border-border bg-muted/40 px-5 py-4">
               <span className="text-sm font-semibold">Total</span>
-              <span className="text-sm font-bold">0 kcal</span>
+              <span className="text-sm font-bold">
+                {consumed.toLocaleString()} kcal
+              </span>
             </div>
           </Card>
         </div>
