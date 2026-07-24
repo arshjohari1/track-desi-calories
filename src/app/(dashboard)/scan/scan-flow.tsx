@@ -11,67 +11,12 @@ import {
   UploadIcon,
 } from "~/components/dashboard/icons";
 import type { FoodAnalysis, FoodMacros } from "~/lib/ai/food";
+import { fileToCompressedDataUrl, postJson } from "~/lib/scan-client";
 import { cn } from "~/lib/utils";
 import { logMeal } from "./actions";
 
 type Step = "upload" | "analyzing" | "questions" | "estimating" | "result";
 type LogState = "idle" | "saving" | "saved";
-
-/**
- * Shrinks a photo to a max dimension and re-encodes as JPEG so the upload stays
- * small (phone photos are often several MB). Falls back to the original data URL
- * if the browser can't decode/redraw it.
- */
-async function fileToCompressedDataUrl(
-  file: File,
-  maxDim = 1024,
-  quality = 0.85,
-): Promise<string> {
-  const originalDataUrl = await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(new Error("Could not read that file."));
-    reader.readAsDataURL(file);
-  });
-
-  try {
-    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-      const image = new Image();
-      image.onload = () => resolve(image);
-      image.onerror = () => reject(new Error("Could not load that image."));
-      image.src = originalDataUrl;
-    });
-
-    const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
-    const w = Math.max(1, Math.round(img.width * scale));
-    const h = Math.max(1, Math.round(img.height * scale));
-
-    const canvas = document.createElement("canvas");
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return originalDataUrl;
-    ctx.drawImage(img, 0, 0, w, h);
-    return canvas.toDataURL("image/jpeg", quality);
-  } catch {
-    return originalDataUrl;
-  }
-}
-
-async function postJson<T>(url: string, body: unknown): Promise<T> {
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  const data = (await res.json().catch(() => ({}))) as Partial<T> & {
-    error?: string;
-  };
-  if (!res.ok) {
-    throw new Error(data.error ?? "Something went wrong. Please try again.");
-  }
-  return data as T;
-}
 
 const CONFIDENCE_STYLES: Record<FoodMacros["confidence"], string> = {
   high: "bg-green-600/10 text-green-700 dark:text-green-400",
@@ -79,11 +24,25 @@ const CONFIDENCE_STYLES: Record<FoodMacros["confidence"], string> = {
   low: "bg-red-600/10 text-red-700 dark:text-red-400",
 };
 
+/**
+ * True for the canonical "Other (please specify)" catch-all option that the
+ * analyze prompt is told to emit. Also tolerates a bare "Other" or any
+ * "(specify)" wording in case the model drifts — but not phrases that merely
+ * contain the word "other" (e.g. "Other vegetables"), which are real choices,
+ * not a fill-in prompt. Selecting it reveals a free-text field.
+ */
+function isOtherOption(opt: string): boolean {
+  const norm = opt.trim().toLowerCase();
+  return norm === "other" || norm.includes("specify");
+}
+
 export function ScanFlow() {
   const [step, setStep] = useState<Step>("upload");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<FoodAnalysis | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  // Questions whose "Other" option is selected, so a free-text field is shown.
+  const [otherActive, setOtherActive] = useState<Record<string, boolean>>({});
   const [macros, setMacros] = useState<FoodMacros | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
@@ -97,6 +56,7 @@ export function ScanFlow() {
     setImageUrl(null);
     setAnalysis(null);
     setAnswers({});
+    setOtherActive({});
     setMacros(null);
     setError(null);
     setLogState("idle");
@@ -118,6 +78,7 @@ export function ScanFlow() {
       carbs: macros.carbs,
       fat: macros.fat,
       fiber: macros.fiber,
+      sugar: macros.sugar,
       confidence: macros.confidence,
       assumptions: macros.assumptions,
       tip: macros.tip,
@@ -139,6 +100,7 @@ export function ScanFlow() {
     setMacros(null);
     setAnalysis(null);
     setAnswers({});
+    setOtherActive({});
 
     let dataUrl: string;
     try {
@@ -350,28 +312,63 @@ export function ScanFlow() {
                   <p className="text-xs text-muted-foreground">{q.helpText}</p>
                 )}
                 {q.type === "single" && q.options.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {q.options.map((opt) => {
-                      const selected = answers[q.id] === opt;
-                      return (
-                        <button
-                          key={opt}
-                          type="button"
-                          onClick={() =>
-                            setAnswers((prev) => ({ ...prev, [q.id]: opt }))
-                          }
-                          className={cn(
-                            "rounded-lg border px-3 py-2 text-sm font-medium transition-colors",
-                            selected
-                              ? "border-orange-600 bg-orange-600/10 text-foreground"
-                              : "border-border text-muted-foreground hover:bg-muted",
-                          )}
-                        >
-                          {opt}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <>
+                    <div className="flex flex-wrap gap-2">
+                      {q.options.map((opt) => {
+                        const other = isOtherOption(opt);
+                        const selected = other
+                          ? Boolean(otherActive[q.id])
+                          : !otherActive[q.id] && answers[q.id] === opt;
+                        return (
+                          <button
+                            key={opt}
+                            type="button"
+                            onClick={() => {
+                              if (other) {
+                                setOtherActive((prev) => ({
+                                  ...prev,
+                                  [q.id]: true,
+                                }));
+                                // Clear so they must type the specifics before continuing.
+                                setAnswers((prev) => ({ ...prev, [q.id]: "" }));
+                              } else {
+                                setOtherActive((prev) => ({
+                                  ...prev,
+                                  [q.id]: false,
+                                }));
+                                setAnswers((prev) => ({
+                                  ...prev,
+                                  [q.id]: opt,
+                                }));
+                              }
+                            }}
+                            className={cn(
+                              "rounded-lg border px-3 py-2 text-sm font-medium transition-colors",
+                              selected
+                                ? "border-orange-600 bg-orange-600/10 text-foreground"
+                                : "border-border text-muted-foreground hover:bg-muted",
+                            )}
+                          >
+                            {opt}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {otherActive[q.id] && (
+                      <input
+                        type="text"
+                        value={answers[q.id] ?? ""}
+                        onChange={(e) =>
+                          setAnswers((prev) => ({
+                            ...prev,
+                            [q.id]: e.target.value,
+                          }))
+                        }
+                        placeholder="Please specify…"
+                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      />
+                    )}
+                  </>
                 ) : (
                   <input
                     type="text"
@@ -457,11 +454,12 @@ export function ScanFlow() {
                   {macros.confidence} confidence
                 </span>
               </div>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
                 <MacroTile label="Protein" value={macros.protein} />
                 <MacroTile label="Carbs" value={macros.carbs} />
                 <MacroTile label="Fat" value={macros.fat} />
                 <MacroTile label="Fiber" value={macros.fiber} />
+                <MacroTile label="Sugar" value={macros.sugar} />
               </div>
             </div>
           </div>

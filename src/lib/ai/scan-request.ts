@@ -23,6 +23,10 @@ export const analyzeRequestSchema = z.object({
   image: imageDataUrl,
 });
 
+export const labelRequestSchema = z.object({
+  image: imageDataUrl,
+});
+
 export const estimateRequestSchema = z.object({
   image: imageDataUrl,
   analysis: z.object({

@@ -26,12 +26,13 @@ export type Meal = {
   carbs: number;
   fat: number;
   fiber: number;
+  sugar: number;
   confidence: Confidence | null;
   eatenAt: string;
 };
 
 const MEAL_SELECT =
-  "id, dish_name, serving_summary, cuisine, is_south_asian, image_url, calories, protein, carbs, fat, fiber, confidence, eaten_at";
+  "id, dish_name, serving_summary, cuisine, is_south_asian, image_url, calories, protein, carbs, fat, fiber, sugar, confidence, eaten_at";
 
 type RawMeal = {
   id: string;
@@ -45,6 +46,8 @@ type RawMeal = {
   carbs: number | string;
   fat: number | string;
   fiber: number | string;
+  // Nullable: meals logged before the sugar column existed have no value.
+  sugar: number | string | null;
   confidence: Confidence | null;
   eaten_at: string;
 };
@@ -62,6 +65,7 @@ function toMeal(row: RawMeal): Meal {
     carbs: Number(row.carbs) || 0,
     fat: Number(row.fat) || 0,
     fiber: Number(row.fiber) || 0,
+    sugar: Number(row.sugar) || 0,
     confidence: row.confidence,
     eatenAt: row.eaten_at,
   };
@@ -96,6 +100,28 @@ export async function fetchMeals(
 
 export function sumCalories(meals: Meal[]): number {
   return meals.reduce((total, meal) => total + meal.calories, 0);
+}
+
+export type MacroTotals = {
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber: number;
+  sugar: number;
+};
+
+/** Sum the gram macros across meals (for the dashboard's daily breakdown). */
+export function sumMacros(meals: Meal[]): MacroTotals {
+  return meals.reduce<MacroTotals>(
+    (totals, meal) => ({
+      protein: totals.protein + meal.protein,
+      carbs: totals.carbs + meal.carbs,
+      fat: totals.fat + meal.fat,
+      fiber: totals.fiber + meal.fiber,
+      sugar: totals.sugar + meal.sugar,
+    }),
+    { protein: 0, carbs: 0, fat: 0, fiber: 0, sugar: 0 },
+  );
 }
 
 export type MealDay = {
