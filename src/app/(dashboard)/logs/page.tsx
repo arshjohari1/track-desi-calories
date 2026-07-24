@@ -3,6 +3,7 @@ import { LogsIcon, UploadIcon } from "~/components/dashboard/icons";
 import { MealRow } from "~/components/dashboard/meal-row";
 import { fetchMeals, groupMealsByDay } from "~/lib/meals";
 import { createClient } from "~/lib/supabase/server";
+import { getUserTimeZone } from "~/lib/timezone";
 import { DeleteMealButton } from "./delete-meal-button";
 
 export default async function LogsPage() {
@@ -11,8 +12,9 @@ export default async function LogsPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const timeZone = await getUserTimeZone();
   const meals = await fetchMeals(supabase, user?.id ?? "", { limit: 100 });
-  const days = groupMealsByDay(meals);
+  const days = groupMealsByDay(meals, timeZone);
 
   if (days.length === 0) {
     return (

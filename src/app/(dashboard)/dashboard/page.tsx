@@ -8,11 +8,17 @@ import {
   UploadIcon,
 } from "~/components/dashboard/icons";
 import { MealRow } from "~/components/dashboard/meal-row";
-import { formatDayLabel, parseDateParam, startOfDay } from "~/lib/date";
+import {
+  endOfDay,
+  formatDayLabel,
+  parseDateParam,
+  startOfDay,
+} from "~/lib/date";
 import { getCalorieStatus } from "~/lib/goal-status";
 import { fetchMeals, sumCalories, sumMacros } from "~/lib/meals";
 import { GOALS, type Goal } from "~/lib/onboarding";
 import { createClient } from "~/lib/supabase/server";
+import { getUserTimeZone } from "~/lib/timezone";
 import { cn } from "~/lib/utils";
 
 // Status highlights use the app's brand orange in every state — no green.
@@ -82,11 +88,11 @@ export default async function DashboardPage({
   searchParams: Promise<{ date?: string }>;
 }) {
   const { date } = await searchParams;
-  const selectedDay = parseDateParam(date) ?? startOfDay();
-  const dayEnd = new Date(selectedDay);
-  dayEnd.setDate(dayEnd.getDate() + 1);
-  const isToday = selectedDay.getTime() === startOfDay().getTime();
-  const dayLabel = formatDayLabel(selectedDay);
+  const timeZone = await getUserTimeZone();
+  const selectedDay = parseDateParam(date, timeZone) ?? startOfDay(timeZone);
+  const dayEnd = endOfDay(timeZone, selectedDay);
+  const isToday = selectedDay.getTime() === startOfDay(timeZone).getTime();
+  const dayLabel = formatDayLabel(selectedDay, timeZone);
 
   const supabase = await createClient();
   const {
