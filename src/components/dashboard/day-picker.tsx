@@ -14,7 +14,13 @@ import { CalendarIcon, ChevronDownIcon } from "./icons";
  * reflects the day currently shown (only the dashboard is date-scoped, so it
  * reads "Today" everywhere else).
  */
-export function DayPicker({ days }: { days: MealDaySummary[] }) {
+export function DayPicker({
+  days,
+  timeZone,
+}: {
+  days: MealDaySummary[];
+  timeZone: string;
+}) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
@@ -22,9 +28,9 @@ export function DayPicker({ days }: { days: MealDaySummary[] }) {
 
   const onDashboard = pathname === "/dashboard";
   const dateParam = onDashboard ? searchParams.get("date") : null;
-  const selected = parseDateParam(dateParam);
+  const selected = parseDateParam(dateParam, timeZone);
   const activeParam = selected ? dateParam : null;
-  const label = selected ? formatDayLabel(selected) : "Today";
+  const label = selected ? formatDayLabel(selected, timeZone) : "Today";
 
   useEffect(() => {
     if (!open) return;

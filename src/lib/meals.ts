@@ -1,7 +1,7 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { formatDayLabel, startOfDay, toDateParam } from "~/lib/date";
+import { formatDayLabel, toDateParam } from "~/lib/date";
 
 /**
  * Meal reads for the dashboard tracker, "recent meals", the day-picker, and the
@@ -132,13 +132,13 @@ export type MealDay = {
 };
 
 /**
- * Group meals (assumed newest-first) into calendar days, newest day first, with
- * a friendly label and per-day calorie total.
+ * Group meals (assumed newest-first) into calendar days in `timeZone`, newest
+ * day first, with a friendly label and per-day calorie total.
  */
-export function groupMealsByDay(meals: Meal[]): MealDay[] {
+export function groupMealsByDay(meals: Meal[], timeZone: string): MealDay[] {
   const groups = new Map<string, Meal[]>();
   for (const meal of meals) {
-    const key = toDateParam(startOfDay(new Date(meal.eatenAt)));
+    const key = toDateParam(new Date(meal.eatenAt), timeZone);
     const bucket = groups.get(key);
     if (bucket) bucket.push(meal);
     else groups.set(key, [meal]);
@@ -146,7 +146,7 @@ export function groupMealsByDay(meals: Meal[]): MealDay[] {
 
   return [...groups.entries()].map(([key, dayMeals]) => ({
     key,
-    label: formatDayLabel(new Date(dayMeals[0].eatenAt)),
+    label: formatDayLabel(new Date(dayMeals[0].eatenAt), timeZone),
     meals: dayMeals,
     total: sumCalories(dayMeals),
   }));
@@ -167,6 +167,7 @@ export type MealDaySummary = {
 export async function fetchMealDaySummaries(
   supabase: SupabaseClient,
   userId: string,
+  timeZone: string,
   opts: { limit?: number } = {},
 ): Promise<MealDaySummary[]> {
   if (!userId) return [];
@@ -180,23 +181,28 @@ export async function fetchMealDaySummaries(
 
   if (error || !data) return [];
 
-  const groups = new Map<string, { total: number; count: number; day: Date }>();
+  const groups = new Map<
+    string,
+    { total: number; count: number; instant: Date }
+  >();
   for (const row of data as { eaten_at: string; calories: number | string }[]) {
-    const day = startOfDay(new Date(row.eaten_at));
-    const key = toDateParam(day);
+    const instant = new Date(row.eaten_at);
+    const key = toDateParam(instant, timeZone);
     const calories = Number(row.calories) || 0;
     const group = groups.get(key);
     if (group) {
       group.total += calories;
       group.count += 1;
     } else {
-      groups.set(key, { total: calories, count: 1, day });
+      // Rows are newest-first, so this instant lands in `key`'s day — any
+      // instant within the day is enough to label it.
+      groups.set(key, { total: calories, count: 1, instant });
     }
   }
 
   return [...groups.entries()].map(([date, group]) => ({
     date,
-    label: formatDayLabel(group.day),
+    label: formatDayLabel(group.instant, timeZone),
     count: group.count,
     total: Math.round(group.total),
   }));

@@ -8,9 +8,11 @@ import { CalendarIcon, ChevronDownIcon, UploadIcon } from "./icons";
 export function DashboardTopbar({
   email,
   days,
+  timeZone,
 }: {
   email: string;
   days: MealDaySummary[];
+  timeZone: string;
 }) {
   const initial = email.charAt(0).toUpperCase();
 
@@ -18,7 +20,7 @@ export function DashboardTopbar({
     <header className="sticky top-0 z-40 flex h-18 items-center gap-4 border-b border-border bg-background/95 px-4 backdrop-blur lg:px-8">
       {/* Day switcher — scopes the dashboard to the selected day. */}
       <Suspense fallback={<DayPickerFallback />}>
-        <DayPicker days={days} />
+        <DayPicker days={days} timeZone={timeZone} />
       </Suspense>
 
       <div className="ml-auto flex items-center gap-3">
