@@ -48,6 +48,7 @@ export function MealRow({ meal, action }: { meal: Meal; action?: ReactNode }) {
           <span>C {Math.round(meal.carbs)}g</span>
           <span>F {Math.round(meal.fat)}g</span>
           <span>Fiber {Math.round(meal.fiber)}g</span>
+          <span>Sugar {Math.round(meal.sugar)}g</span>
         </div>
       </div>
 

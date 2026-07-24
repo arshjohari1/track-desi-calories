@@ -10,7 +10,7 @@ import {
 import { MealRow } from "~/components/dashboard/meal-row";
 import { formatDayLabel, parseDateParam, startOfDay } from "~/lib/date";
 import { getCalorieStatus } from "~/lib/goal-status";
-import { fetchMeals, sumCalories } from "~/lib/meals";
+import { fetchMeals, sumCalories, sumMacros } from "~/lib/meals";
 import { GOALS, type Goal } from "~/lib/onboarding";
 import { createClient } from "~/lib/supabase/server";
 import { cn } from "~/lib/utils";
@@ -33,6 +33,15 @@ function Card({
       )}
     >
       {children}
+    </div>
+  );
+}
+
+function MacroStat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-lg border border-border bg-muted/30 px-3 py-3 text-center">
+      <p className="text-xl font-bold tracking-tight">{Math.round(value)}g</p>
+      <p className="mt-0.5 text-xs text-muted-foreground">{label}</p>
     </div>
   );
 }
@@ -98,6 +107,7 @@ export default async function DashboardPage({
 
   const target: number | null = profile?.daily_calorie_target ?? null;
   const consumed = Math.round(sumCalories(dayMeals));
+  const macros = sumMacros(dayMeals);
   const remaining = target !== null ? target - consumed : null;
   const goalLabel = GOALS.find((g) => g.value === profile?.goal)?.label ?? null;
 
@@ -128,7 +138,7 @@ export default async function DashboardPage({
         <div className="flex flex-col gap-6">
           {/* Today's calories — no goal set yet */}
           <Card>
-            <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">
                   {isToday ? "Today's Calories" : `Calories · ${dayLabel}`}
@@ -146,20 +156,9 @@ export default async function DashboardPage({
                     kcal
                   </span>
                 </p>
-                {status && isToday ? (
-                  <p className={cn("mt-1 text-sm font-medium", STATUS_ACCENT)}>
-                    {status.message}
-                  </p>
-                ) : (
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {target !== null
-                      ? `Daily goal: ${target.toLocaleString()} kcal${goalLabel ? ` · ${goalLabel}` : ""}`
-                      : "No daily goal set yet"}
-                  </p>
-                )}
               </div>
 
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 sm:shrink-0">
                 <Link
                   href="/scan"
                   className="flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-700"
@@ -167,22 +166,29 @@ export default async function DashboardPage({
                   <UploadIcon className="size-4" />
                   Upload Photo
                 </Link>
-                <button
-                  type="button"
+                <Link
+                  href="/scan?mode=label"
                   className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted"
                 >
                   <PlusIcon className="size-4" />
                   Add Meal
-                </button>
-                <button
-                  type="button"
-                  className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted"
-                >
-                  <RestartIcon className="size-4" />
-                  Restart Scan
-                </button>
+                </Link>
               </div>
             </div>
+
+            {/* Goal status on its own full-width line so it can wrap freely
+                without ever shifting the action buttons above it. */}
+            {status && isToday ? (
+              <p className={cn("mt-3 text-sm font-medium", STATUS_ACCENT)}>
+                {status.message}
+              </p>
+            ) : (
+              <p className="mt-3 text-sm text-muted-foreground">
+                {target !== null
+                  ? `Daily goal: ${target.toLocaleString()} kcal${goalLabel ? ` · ${goalLabel}` : ""}`
+                  : "No daily goal set yet"}
+              </p>
+            )}
 
             <div className="mt-6 grid grid-cols-3 divide-x divide-border border-t border-border pt-5">
               <div className="px-2 text-center sm:px-4 sm:text-left">
@@ -211,6 +217,25 @@ export default async function DashboardPage({
               </div>
             </div>
           </Card>
+
+          {/* Macros for the selected day */}
+          {dayMeals.length > 0 && (
+            <Card>
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold">
+                  {isToday ? "Macros today" : `Macros · ${dayLabel}`}
+                </h2>
+                <span className="text-xs text-muted-foreground">grams</span>
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
+                <MacroStat label="Protein" value={macros.protein} />
+                <MacroStat label="Carbs" value={macros.carbs} />
+                <MacroStat label="Fat" value={macros.fat} />
+                <MacroStat label="Fiber" value={macros.fiber} />
+                <MacroStat label="Sugar" value={macros.sugar} />
+              </div>
+            </Card>
+          )}
 
           {/* Recent meals */}
           <Card className="p-0">
