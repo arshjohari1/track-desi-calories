@@ -1,0 +1,4 @@
+# Normalize line endings: store all text files as LF in the repo and check
+# them out as LF everywhere, so Windows CRLF working copies stop showing up as
+# phantom "modified" diffs. Binary files are auto-detected and left untouched.
+* text=auto eol=lf
