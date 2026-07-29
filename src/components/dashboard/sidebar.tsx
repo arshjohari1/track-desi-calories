@@ -10,6 +10,7 @@ import {
   LogsIcon,
   ScanIcon,
   SettingsIcon,
+  ShieldIcon,
 } from "./icons";
 
 const navItems = [
@@ -21,7 +22,12 @@ const navItems = [
   { label: "Settings", href: "/settings", icon: SettingsIcon },
 ];
 
-export function DashboardSidebar() {
+/**
+ * `isAdmin` comes from the layout, which already resolves the user server-side.
+ * It only decides whether the link is *shown* — /admin re-checks the role on the
+ * server and redirects, so hiding this is convenience, not the access control.
+ */
+export function DashboardSidebar({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname();
 
   return (
@@ -59,6 +65,33 @@ export function DashboardSidebar() {
             </Link>
           );
         })}
+
+        {isAdmin && (
+          <>
+            {/* Kept below a divider: it's an operator tool, not part of the
+                everyday app nav. */}
+            <span className="my-2 border-t border-border" />
+            <Link
+              href="/admin"
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                pathname === "/admin"
+                  ? "bg-orange-50 text-orange-700 dark:bg-orange-950/50 dark:text-orange-300"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+              )}
+            >
+              <ShieldIcon
+                className={cn(
+                  "size-5",
+                  pathname === "/admin"
+                    ? "text-orange-600 dark:text-orange-400"
+                    : "",
+                )}
+              />
+              Admin
+            </Link>
+          </>
+        )}
       </nav>
 
       <div className="border-t border-border p-4">

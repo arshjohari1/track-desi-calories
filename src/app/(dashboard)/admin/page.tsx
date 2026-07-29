@@ -8,16 +8,24 @@ export default async function AdminPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // The surrounding dashboard layout already requires a signed-in, onboarded
+  // user, so anyone rejected here is a real user without the role — send them
+  // back into the app rather than out to the marketing landing page.
+  //
+  // This is the actual access control. The sidebar link is only a convenience;
+  // it hides the entry point, it doesn't guard the route.
   if (!user || user.app_metadata?.role !== "admin") {
-    redirect("/");
+    redirect("/dashboard");
   }
 
   const adminClient = createAdminClient();
   const { data, error } = await adminClient.auth.admin.listUsers();
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="mb-6 text-2xl font-bold text-foreground">Admin — Users</h1>
+    // Width and spacing match the other dashboard pages; the surrounding
+    // layout already supplies the page padding.
+    <div className="mx-auto max-w-4xl">
+      <h1 className="mb-6 text-2xl font-bold tracking-tight">Admin — Users</h1>
 
       {error && (
         <p className="mb-4 text-sm text-red-500">

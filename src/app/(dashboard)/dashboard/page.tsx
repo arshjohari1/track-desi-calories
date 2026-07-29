@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LogDishButton } from "~/app/(dashboard)/kitchen/log-dish-button";
 import {
   GoalsIcon,
   KitchenIcon,
@@ -15,6 +16,7 @@ import {
   startOfDay,
 } from "~/lib/date";
 import { getCalorieStatus } from "~/lib/goal-status";
+import { fetchKitchenDishCount, fetchKitchenDishes } from "~/lib/kitchen";
 import { fetchMeals, sumCalories, sumMacros } from "~/lib/meals";
 import { GOALS, type Goal } from "~/lib/onboarding";
 import { createClient } from "~/lib/supabase/server";
@@ -101,15 +103,20 @@ export default async function DashboardPage({
 
   const userId = user?.id ?? "";
 
-  const [{ data: profile }, dayMeals, recentMeals] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("daily_calorie_target, goal")
-      .eq("id", userId)
-      .maybeSingle(),
-    fetchMeals(supabase, userId, { since: selectedDay, until: dayEnd }),
-    fetchMeals(supabase, userId, { limit: 5 }),
-  ]);
+  const [{ data: profile }, dayMeals, recentMeals, topDishes, savedDishCount] =
+    await Promise.all([
+      supabase
+        .from("profiles")
+        .select("daily_calorie_target, goal")
+        .eq("id", userId)
+        .maybeSingle(),
+      fetchMeals(supabase, userId, { since: selectedDay, until: dayEnd }),
+      fetchMeals(supabase, userId, { limit: 5 }),
+      // The rail is the point of the Kitchen: repeat logging happens here, not
+      // on a page the user has to navigate to.
+      fetchKitchenDishes(supabase, userId, { limit: 3 }),
+      fetchKitchenDishCount(supabase, userId),
+    ]);
 
   const target: number | null = profile?.daily_calorie_target ?? null;
   const consumed = Math.round(sumCalories(dayMeals));
@@ -218,8 +225,8 @@ export default async function DashboardPage({
                 <p className="mt-0.5 text-lg font-bold">{dayMeals.length}</p>
               </div>
               <div className="px-2 text-center sm:px-4 sm:text-left">
-                <p className="text-xs text-muted-foreground">Saved recipes</p>
-                <p className="mt-0.5 text-lg font-bold">0</p>
+                <p className="text-xs text-muted-foreground">Saved dishes</p>
+                <p className="mt-0.5 text-lg font-bold">{savedDishCount}</p>
               </div>
             </div>
           </Card>
@@ -362,13 +369,71 @@ export default async function DashboardPage({
 
           {/* Kitchen */}
           <Card>
-            <h2 className="font-semibold">Kitchen</h2>
-            <EmptyState
-              icon={KitchenIcon}
-              title="Your Kitchen is empty"
-              hint="Save a recipe and it will show up here for faster logging."
-              className="px-0 py-8"
-            />
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold">Kitchen</h2>
+              {topDishes.length > 0 && (
+                <Link
+                  href="/kitchen"
+                  className="text-xs font-medium text-orange-600 transition-colors hover:text-orange-700"
+                >
+                  View all
+                </Link>
+              )}
+            </div>
+            {topDishes.length > 0 ? (
+              <div className="mt-3 flex flex-col gap-3">
+                {topDishes.map((dish) => (
+                  <div
+                    key={dish.id}
+                    className="flex items-center gap-3 rounded-lg border border-border p-3"
+                  >
+                    {dish.thumbUrl ? (
+                      // biome-ignore lint/performance/noImgElement: stored data URL, not a remote asset
+                      <img
+                        src={dish.thumbUrl}
+                        alt={dish.name}
+                        className="size-10 shrink-0 rounded-lg object-cover"
+                      />
+                    ) : (
+                      <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                        <KitchenIcon className="size-5" />
+                      </span>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">
+                        {dish.name}
+                      </p>
+                      <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                        {Math.round(dish.calories).toLocaleString()} kcal
+                        {dish.servingSummary ? ` · ${dish.servingSummary}` : ""}
+                      </p>
+                    </div>
+                    <div className="shrink-0">
+                      <LogDishButton
+                        dishId={dish.id}
+                        servingSummary={null}
+                        size="sm"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon={KitchenIcon}
+                title="Your Kitchen is empty"
+                hint="Save a dish after a scan and it will show up here for one-tap logging."
+                action={
+                  <Link
+                    href="/scan"
+                    className="mt-1 rounded-lg border border-orange-600 px-4 py-2 text-sm font-semibold text-orange-600 transition-colors hover:bg-orange-50 dark:hover:bg-orange-950/40"
+                  >
+                    Scan a meal
+                  </Link>
+                }
+                className="px-0 py-8"
+              />
+            )}
           </Card>
 
           {/* Repeat dishes */}

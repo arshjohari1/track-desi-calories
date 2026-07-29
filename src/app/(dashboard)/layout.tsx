@@ -38,7 +38,7 @@ export default async function DashboardLayout({
   return (
     <div className="flex min-h-screen bg-muted/30">
       <TimezoneSync serverTimeZone={timeZone} />
-      <DashboardSidebar />
+      <DashboardSidebar isAdmin={user.app_metadata?.role === "admin"} />
       <div className="flex min-w-0 flex-1 flex-col">
         <DashboardTopbar
           email={user.email ?? ""}
