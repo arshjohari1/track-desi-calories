@@ -9,6 +9,7 @@ import {
   PlusIcon,
   UploadIcon,
 } from "~/components/dashboard/icons";
+import { SaveToKitchenButton } from "~/components/dashboard/save-to-kitchen-button";
 import {
   type AmountInput,
   type AmountMode,
@@ -19,7 +20,11 @@ import {
   type PerServingMacros,
   scaleMacros,
 } from "~/lib/label";
-import { fileToCompressedDataUrl, postJson } from "~/lib/scan-client";
+import {
+  dataUrlToThumbnail,
+  fileToCompressedDataUrl,
+  postJson,
+} from "~/lib/scan-client";
 import { cn } from "~/lib/utils";
 import { logMeal } from "./actions";
 
@@ -89,6 +94,9 @@ function limitDecimals(value: string, places = 2): string {
 export function LabelFlow() {
   const [step, setStep] = useState<Step>("upload");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  // The display-sized copy we persist. The full-size `imageUrl` above is what
+  // the model reads the fine print from; it never reaches the database.
+  const [thumbUrl, setThumbUrl] = useState<string | null>(null);
   const [reading, setReading] = useState<LabelReading | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
@@ -116,6 +124,7 @@ export function LabelFlow() {
   const reset = () => {
     setStep("upload");
     setImageUrl(null);
+    setThumbUrl(null);
     setReading(null);
     setError(null);
     setProductName("");
@@ -146,6 +155,9 @@ export function LabelFlow() {
       return;
     }
     setImageUrl(dataUrl);
+    // Derive the thumbnail now rather than at log time: it keeps the log
+    // handler quick and avoids redoing the work if the user logs twice.
+    setThumbUrl(await dataUrlToThumbnail(dataUrl));
     setStep("reading");
 
     try {
@@ -273,7 +285,7 @@ export function LabelFlow() {
     setLogError(null);
     setLogState("saving");
     const result = await logMeal({
-      image: imageUrl,
+      image: thumbUrl,
       dishName: (productName.trim() || "Packaged food").slice(0, 200),
       servingSummary: formatAmountEaten(amount),
       cuisine: null,
@@ -742,6 +754,41 @@ export function LabelFlow() {
               </button>
             </div>
           )}
+
+          {/* Packaged foods are the most repeated things people log, so saving
+              matters even more here than on the photo flow. */}
+          <div className="flex flex-wrap items-start gap-3">
+            <SaveToKitchenButton
+              defaultName={productName.trim() || "Packaged food"}
+              dish={{
+                source: "label",
+                thumbUrl,
+                servingSummary: formatAmountEaten(amount),
+                cuisine: null,
+                isSouthAsian: false,
+                calories: scaled.calories,
+                protein: scaled.protein,
+                carbs: scaled.carbs,
+                fat: scaled.fat,
+                fiber: scaled.fiber,
+                sugar: scaled.sugar,
+                confidence: reading.isLabel ? reading.confidence : "low",
+                // The label flow asks no prep questions — the amount eaten is
+                // the whole story, and it's already the serving summary.
+                prepAnswers: [],
+                assumptions: [
+                  ...reading.notes,
+                  `Logged ${formatAmountEaten(amount)} from label values (${
+                    reading.servingSizeText
+                  }).`,
+                ].slice(0, 20),
+                tip: null,
+              }}
+            />
+            <p className="max-w-xs text-xs text-muted-foreground">
+              Buy this often? Save it and skip the label next time.
+            </p>
+          </div>
 
           <p className="text-center text-xs text-muted-foreground">
             Read from the package label — double-check the numbers if the print

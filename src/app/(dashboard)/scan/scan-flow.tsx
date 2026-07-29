@@ -10,8 +10,13 @@ import {
   SpiceIcon,
   UploadIcon,
 } from "~/components/dashboard/icons";
+import { SaveToKitchenButton } from "~/components/dashboard/save-to-kitchen-button";
 import type { FoodAnalysis, FoodMacros } from "~/lib/ai/food";
-import { fileToCompressedDataUrl, postJson } from "~/lib/scan-client";
+import {
+  dataUrlToThumbnail,
+  fileToCompressedDataUrl,
+  postJson,
+} from "~/lib/scan-client";
 import { cn } from "~/lib/utils";
 import { logMeal } from "./actions";
 
@@ -39,6 +44,9 @@ function isOtherOption(opt: string): boolean {
 export function ScanFlow() {
   const [step, setStep] = useState<Step>("upload");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  // The display-sized copy we persist. The full-size `imageUrl` above is what
+  // the model sees; it never reaches the database.
+  const [thumbUrl, setThumbUrl] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<FoodAnalysis | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   // Questions whose "Other" option is selected, so a free-text field is shown.
@@ -54,6 +62,7 @@ export function ScanFlow() {
   const reset = useCallback(() => {
     setStep("upload");
     setImageUrl(null);
+    setThumbUrl(null);
     setAnalysis(null);
     setAnswers({});
     setOtherActive({});
@@ -68,7 +77,7 @@ export function ScanFlow() {
     setLogError(null);
     setLogState("saving");
     const result = await logMeal({
-      image: imageUrl,
+      image: thumbUrl,
       dishName: macros.dishName,
       servingSummary: macros.servingSummary,
       cuisine: analysis?.cuisine ?? null,
@@ -89,7 +98,7 @@ export function ScanFlow() {
       setLogState("idle");
       setLogError(result.error);
     }
-  }, [macros, imageUrl, analysis]);
+  }, [macros, thumbUrl, analysis]);
 
   const handleFile = useCallback(async (file: File) => {
     if (!file.type.startsWith("image/")) {
@@ -110,6 +119,9 @@ export function ScanFlow() {
       return;
     }
     setImageUrl(dataUrl);
+    // Derive the thumbnail now rather than at log time: it keeps the log
+    // handler quick and avoids redoing the work if the user logs twice.
+    setThumbUrl(await dataUrlToThumbnail(dataUrl));
     setStep("analyzing");
 
     try {
@@ -570,6 +582,38 @@ export function ScanFlow() {
               </button>
             </div>
           )}
+
+          {/* Saving is offered whether or not the meal was logged — a dish worth
+              keeping is worth keeping either way. */}
+          <div className="flex flex-wrap items-start gap-3">
+            <SaveToKitchenButton
+              defaultName={macros.dishName}
+              dish={{
+                source: "photo",
+                thumbUrl,
+                servingSummary: macros.servingSummary,
+                cuisine: analysis?.cuisine ?? null,
+                isSouthAsian: analysis?.isSouthAsian ?? false,
+                calories: macros.calories,
+                protein: macros.protein,
+                carbs: macros.carbs,
+                fat: macros.fat,
+                fiber: macros.fiber,
+                sugar: macros.sugar,
+                confidence: macros.confidence,
+                prepAnswers:
+                  analysis?.questions.map((q) => ({
+                    question: q.label,
+                    answer: answers[q.id] ?? "",
+                  })) ?? [],
+                assumptions: macros.assumptions,
+                tip: macros.tip,
+              }}
+            />
+            <p className="max-w-xs text-xs text-muted-foreground">
+              Eat this often? Save it and log it next time in one tap.
+            </p>
+          </div>
 
           <p className="text-center text-xs text-muted-foreground">
             AI estimate — actual values vary with ingredients and preparation.

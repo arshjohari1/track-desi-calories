@@ -1,20 +1,43 @@
 import Link from "next/link";
 import { LogsIcon, UploadIcon } from "~/components/dashboard/icons";
 import { MealRow } from "~/components/dashboard/meal-row";
+import { SaveToKitchenButton } from "~/components/dashboard/save-to-kitchen-button";
 import { fetchMeals, groupMealsByDay } from "~/lib/meals";
 import { createClient } from "~/lib/supabase/server";
 import { getUserTimeZone } from "~/lib/timezone";
 import { DeleteMealButton } from "./delete-meal-button";
 
-export default async function LogsPage() {
+const PAGE_SIZE = 20;
+const MAX_LIMIT = 200;
+
+/**
+ * "Load older meals" bumps `?limit=` and re-fetches from the top rather than
+ * paging with a cursor. Slightly wasteful, but it needs no client state and
+ * every row carries a base64 thumbnail, so the ceiling matters more than the
+ * redundancy: without one, a long history would pull megabytes per view.
+ */
+function parseLimit(raw: string | undefined): number {
+  const n = Number.parseInt(raw ?? "", 10);
+  if (!Number.isFinite(n) || n < PAGE_SIZE) return PAGE_SIZE;
+  return Math.min(n, MAX_LIMIT);
+}
+
+export default async function LogsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ limit?: string }>;
+}) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const limit = parseLimit((await searchParams).limit);
   const timeZone = await getUserTimeZone();
-  const meals = await fetchMeals(supabase, user?.id ?? "", { limit: 100 });
+  const meals = await fetchMeals(supabase, user?.id ?? "", { limit });
   const days = groupMealsByDay(meals, timeZone);
+  // A full page back means there are probably older meals still unfetched.
+  const hasMore = meals.length >= limit && limit < MAX_LIMIT;
 
   if (days.length === 0) {
     return (
@@ -77,10 +100,17 @@ export default async function LogsPage() {
                   key={meal.id}
                   meal={meal}
                   action={
-                    <DeleteMealButton
-                      mealId={meal.id}
-                      dishName={meal.dishName}
-                    />
+                    <div className="flex items-center gap-0.5">
+                      <SaveToKitchenButton
+                        variant="icon"
+                        defaultName={meal.dishName}
+                        mealId={meal.id}
+                      />
+                      <DeleteMealButton
+                        mealId={meal.id}
+                        dishName={meal.dishName}
+                      />
+                    </div>
                   }
                 />
               ))}
@@ -88,6 +118,17 @@ export default async function LogsPage() {
           </section>
         ))}
       </div>
+
+      {hasMore && (
+        <div className="mt-6 flex justify-center">
+          <Link
+            href={`/logs?limit=${Math.min(limit + PAGE_SIZE, MAX_LIMIT)}`}
+            className="rounded-lg border border-border px-4 py-2.5 text-sm font-medium transition-colors hover:bg-muted"
+          >
+            Load older meals
+          </Link>
+        </div>
+      )}
     </div>
   );
 }
