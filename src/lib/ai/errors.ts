@@ -3,12 +3,24 @@
  *
  * The SDK wraps retried failures in a RetryError whose real cause sits in
  * `.lastError` / `.errors[]`, so we dig through those to find the underlying
- * status code (e.g. 429 rate limit, 402/403 billing) and map it to something
- * the user can actually act on.
+ * status code (e.g. 429 rate limit, 402/403 billing).
+ *
+ * `message` is deliberately generic. These failures are almost all operator
+ * problems — gateway rate limits, missing AI Gateway credits — and the previous
+ * copy told the user to "add AI Gateway credits in Vercel", which is meaningless
+ * advice to someone tracking their dinner and leaks our billing setup. The
+ * specific cause goes to `reason`, which callers log server-side, so diagnosing
+ * is no harder than before.
  */
+
+/** What the user sees for any AI failure. */
+const USER_MESSAGE = "Something went wrong. Please try again!";
+
 export function describeAiError(err: unknown): {
   status: number;
   message: string;
+  /** Operator-facing detail for server logs — never sent to the client. */
+  reason: string;
 } {
   const anyErr = err as {
     statusCode?: number;
@@ -30,8 +42,9 @@ export function describeAiError(err: unknown): {
   if (statusCode === 429 || type === "rate_limit_exceeded") {
     return {
       status: 429,
-      message:
-        "Vercel's AI Gateway free tier is rate-limiting this model. Wait a minute and try again, or add AI Gateway credits in Vercel to remove the limit.",
+      message: USER_MESSAGE,
+      reason:
+        "AI Gateway rate limit (429). The free tier is throttling this model — wait, or add AI Gateway credits in Vercel.",
     };
   }
 
@@ -42,13 +55,14 @@ export function describeAiError(err: unknown): {
   ) {
     return {
       status: 402,
-      message:
-        "AI Gateway billing isn't fully set up. Add a payment method and credits in your Vercel AI Gateway settings, then try again.",
+      message: USER_MESSAGE,
+      reason: `AI Gateway billing not set up (${statusCode ?? type}). Add a payment method and credits in Vercel AI Gateway settings.`,
     };
   }
 
   return {
     status: 502,
-    message: "Couldn't reach the AI service. Please try again.",
+    message: USER_MESSAGE,
+    reason: `Unrecognised AI failure${statusCode ? ` (status ${statusCode})` : ""}. See the logged error above.`,
   };
 }

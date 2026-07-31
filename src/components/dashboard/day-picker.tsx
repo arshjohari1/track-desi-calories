@@ -56,26 +56,26 @@ export function DayPicker({
     : [{ date: "", label: "Today", count: 0, total: 0 }, ...days];
 
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef} className="relative min-w-0">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="menu"
         aria-expanded={open}
-        className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium transition-colors hover:bg-muted"
+        className="flex h-11 min-w-0 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium transition-colors hover:bg-muted sm:h-10"
       >
-        <CalendarIcon className="size-4 text-muted-foreground" />
-        <span>{label}</span>
+        <CalendarIcon className="size-4 shrink-0 text-muted-foreground" />
+        <span className="truncate">{label}</span>
         <ChevronDownIcon
           className={cn(
-            "size-4 text-muted-foreground transition-transform",
+            "size-4 shrink-0 text-muted-foreground transition-transform",
             open && "rotate-180",
           )}
         />
       </button>
 
       {open && (
-        <div className="absolute left-0 z-50 mt-2 max-h-80 w-64 overflow-y-auto rounded-xl border border-border bg-card p-1 shadow-lg">
+        <div className="absolute left-0 z-50 mt-2 max-h-80 w-[min(16rem,calc(100vw-1.5rem))] overflow-y-auto rounded-xl border border-border bg-card p-1 shadow-lg">
           <p className="px-3 py-2 text-xs font-medium text-muted-foreground">
             Jump to a day
           </p>

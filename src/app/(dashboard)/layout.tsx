@@ -36,7 +36,11 @@ export default async function DashboardLayout({
   const days = await fetchMealDaySummaries(supabase, user.id, timeZone);
 
   return (
-    <div className="flex min-h-screen bg-muted/30">
+    // The light shell is a faint grey wash so white cards lift off it. In dark
+    // mode that wash lands *between* the page and the card and flattens both, so
+    // the shell drops to the base background and lets the cards be the raised
+    // surface.
+    <div className="flex min-h-screen bg-muted/30 dark:bg-background">
       <TimezoneSync serverTimeZone={timeZone} />
       <DashboardSidebar isAdmin={user.app_metadata?.role === "admin"} />
       <div className="flex min-w-0 flex-1 flex-col">
@@ -44,6 +48,7 @@ export default async function DashboardLayout({
           email={user.email ?? ""}
           days={days}
           timeZone={timeZone}
+          isAdmin={user.app_metadata?.role === "admin"}
         />
         <main className="flex-1 px-4 py-6 lg:px-8">{children}</main>
       </div>

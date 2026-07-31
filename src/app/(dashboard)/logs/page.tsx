@@ -72,7 +72,7 @@ export default async function LogsPage({
         </div>
         <Link
           href="/scan"
-          className="flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-700"
+          className="flex h-11 items-center gap-2 rounded-lg bg-orange-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-orange-700 sm:h-10"
         >
           <UploadIcon className="size-4" />
           Log a meal

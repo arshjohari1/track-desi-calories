@@ -25,11 +25,13 @@ export default async function ScanPage({
         </p>
       </div>
 
-      <div className="mb-6 inline-flex rounded-lg border border-border bg-card p-1">
+      {/* Full-width split on phones so each tab is a comfortable target; hugs
+          its content again from `sm` up. */}
+      <div className="mb-6 flex rounded-lg border border-border bg-card p-1 sm:inline-flex">
         <Link
           href="/scan"
           className={cn(
-            "flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors",
+            "flex h-11 flex-1 items-center justify-center gap-2 rounded-md px-3 text-sm font-medium transition-colors sm:h-10 sm:flex-none sm:px-4",
             isLabel
               ? "text-muted-foreground hover:bg-muted"
               : "bg-orange-600 text-white",
@@ -41,7 +43,7 @@ export default async function ScanPage({
         <Link
           href="/scan?mode=label"
           className={cn(
-            "flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors",
+            "flex h-11 flex-1 items-center justify-center gap-2 rounded-md px-3 text-sm font-medium transition-colors sm:h-10 sm:flex-none sm:px-4",
             isLabel
               ? "bg-orange-600 text-white"
               : "text-muted-foreground hover:bg-muted",

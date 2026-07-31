@@ -264,7 +264,7 @@ export function ScanFlow() {
       )}
 
       {step === "questions" && analysis && (
-        <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[220px_1fr]">
           {/* Left: what the AI saw */}
           <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4">
             {imageUrl && (
@@ -292,8 +292,22 @@ export function ScanFlow() {
                   South Asian
                 </span>
               )}
-              <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium capitalize text-muted-foreground">
-                {analysis.confidence} confidence
+              {/* Same colour scale as the estimate badge and the Kitchen card —
+                  this was hardcoded neutral, so "high" read grey here and green
+                  everywhere else.
+
+                  The "· dish match" suffix matters: this badge and the one on the
+                  results screen measure different things (is this the right dish
+                  vs are these the right numbers), and unqualified "confidence" on
+                  both made a normal high→medium transition look like a bug. */}
+              <span
+                className={cn(
+                  "rounded-full px-2 py-0.5 text-xs font-medium",
+                  CONFIDENCE_STYLES[analysis.confidence],
+                )}
+              >
+                <span className="capitalize">{analysis.confidence}</span>{" "}
+                confidence · dish match
               </span>
             </div>
             {analysis.description && (
@@ -382,6 +396,9 @@ export function ScanFlow() {
                     )}
                   </>
                 ) : (
+                  /* Fallback only. The schema forces multiple choice, so this is
+                     unreachable unless a response comes back with no options —
+                     in which case a text box beats a dead-end question. */
                   <input
                     type="text"
                     value={answers[q.id] ?? ""}
@@ -426,7 +443,7 @@ export function ScanFlow() {
 
       {step === "result" && macros && (
         <div className="flex flex-col gap-4">
-          <div className="grid gap-4 sm:grid-cols-[200px_1fr]">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-[200px_1fr]">
             {/* Calories headline */}
             <div className="flex flex-col items-center justify-center gap-1 rounded-xl border border-orange-600/30 bg-orange-600/5 p-5 text-center">
               {imageUrl && (
@@ -457,13 +474,16 @@ export function ScanFlow() {
                   </h2>
                   <p className="text-xs text-muted-foreground">Per portion</p>
                 </div>
+                {/* Confidence in the numbers, not in the dish ID — see the
+                    identify badge above. */}
                 <span
                   className={cn(
-                    "rounded-full px-2.5 py-0.5 text-xs font-medium capitalize",
+                    "rounded-full px-2.5 py-0.5 text-xs font-medium",
                     CONFIDENCE_STYLES[macros.confidence],
                   )}
                 >
-                  {macros.confidence} confidence
+                  <span className="capitalize">{macros.confidence}</span>{" "}
+                  confidence · macros
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
@@ -585,7 +605,7 @@ export function ScanFlow() {
 
           {/* Saving is offered whether or not the meal was logged — a dish worth
               keeping is worth keeping either way. */}
-          <div className="flex flex-wrap items-start gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <SaveToKitchenButton
               defaultName={macros.dishName}
               dish={{
@@ -615,8 +635,13 @@ export function ScanFlow() {
             </p>
           </div>
 
+          {/* Reworded rather than removed. "Actual values vary" read as a legal
+              hedge that undercut the number directly above it; this says the same
+              thing by pointing at the assumptions list, which is more useful and
+              matches the app's whole pitch of showing its reasoning. */}
           <p className="text-center text-xs text-muted-foreground">
-            AI estimate — actual values vary with ingredients and preparation.
+            Estimated from your photo and your answers — see the assumptions
+            above.
           </p>
         </div>
       )}

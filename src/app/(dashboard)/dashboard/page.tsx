@@ -1,11 +1,9 @@
 import Link from "next/link";
 import { LogDishButton } from "~/app/(dashboard)/kitchen/log-dish-button";
 import {
-  GoalsIcon,
   KitchenIcon,
   LogsIcon,
   PlusIcon,
-  RestartIcon,
   UploadIcon,
 } from "~/components/dashboard/icons";
 import { MealRow } from "~/components/dashboard/meal-row";
@@ -36,7 +34,7 @@ function Card({
   return (
     <div
       className={cn(
-        "rounded-xl border border-border bg-card p-5 shadow-sm",
+        "rounded-xl border border-border bg-card p-4 shadow-sm sm:p-5",
         className,
       )}
     >
@@ -171,19 +169,21 @@ export default async function DashboardPage({
                 </p>
               </div>
 
-              <div className="flex flex-wrap gap-2 sm:shrink-0">
+              {/* Equal-width on phones so the pair reads as one control group
+                  and each half is a comfortable tap target. */}
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:shrink-0 sm:flex-wrap">
                 <Link
                   href="/scan"
-                  className="flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-700"
+                  className="flex h-11 items-center justify-center gap-2 rounded-lg bg-orange-600 px-3 text-sm font-semibold text-white transition-colors hover:bg-orange-700 sm:h-10 sm:px-4"
                 >
-                  <UploadIcon className="size-4" />
+                  <UploadIcon className="size-4 shrink-0" />
                   Upload Photo
                 </Link>
                 <Link
                   href="/scan?mode=label"
-                  className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted"
+                  className="flex h-11 items-center justify-center gap-2 rounded-lg border border-border px-3 text-sm font-medium transition-colors hover:bg-muted sm:h-10 sm:px-4"
                 >
-                  <PlusIcon className="size-4" />
+                  <PlusIcon className="size-4 shrink-0" />
                   Add Meal
                 </Link>
               </div>
@@ -250,14 +250,51 @@ export default async function DashboardPage({
             </Card>
           )}
 
+          {/* Selected day's meals — the day in view is what matters most, so it
+              sits above the rolling recent list. */}
+          <Card className="p-0">
+            <div className="border-b border-border px-4 py-4 sm:px-5">
+              <h2 className="font-semibold">
+                {isToday ? "Today's meals" : `Meals · ${dayLabel}`}
+              </h2>
+            </div>
+            {dayMeals.length > 0 ? (
+              <div className="divide-y divide-border">
+                {dayMeals.map((meal) => (
+                  <MealRow key={meal.id} meal={meal} />
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                icon={KitchenIcon}
+                title={
+                  isToday ? "Nothing logged today" : `No meals on ${dayLabel}`
+                }
+                hint={
+                  isToday
+                    ? "Your breakfast, lunch, snacks, and dinner will show up here."
+                    : undefined
+                }
+              />
+            )}
+            <div className="flex items-center justify-between border-t border-border bg-muted/40 px-4 py-4 sm:px-5">
+              <span className="text-sm font-semibold">Total</span>
+              <span className="text-sm font-bold">
+                {consumed.toLocaleString()} kcal
+              </span>
+            </div>
+          </Card>
+
           {/* Recent meals */}
           <Card className="p-0">
-            <div className="flex items-center justify-between border-b border-border px-5 py-4">
+            <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-4 sm:px-5">
               <h2 className="font-semibold">Recent meals</h2>
               {recentMeals.length > 0 && (
+                // Negative margin keeps the visual position while giving the
+                // link a 40px tap target on touch screens.
                 <Link
                   href="/logs"
-                  className="text-sm font-medium text-orange-600 transition-colors hover:text-orange-700"
+                  className="-my-2.5 inline-flex shrink-0 items-center py-2.5 text-sm font-medium text-orange-600 transition-colors hover:text-orange-700"
                 >
                   View all
                 </Link>
@@ -286,87 +323,10 @@ export default async function DashboardPage({
               />
             )}
           </Card>
-
-          {/* Selected day's meals */}
-          <Card className="p-0">
-            <div className="border-b border-border px-5 py-4">
-              <h2 className="font-semibold">
-                {isToday ? "Today's meals" : `Meals · ${dayLabel}`}
-              </h2>
-            </div>
-            {dayMeals.length > 0 ? (
-              <div className="divide-y divide-border">
-                {dayMeals.map((meal) => (
-                  <MealRow key={meal.id} meal={meal} />
-                ))}
-              </div>
-            ) : (
-              <EmptyState
-                icon={KitchenIcon}
-                title={
-                  isToday ? "Nothing logged today" : `No meals on ${dayLabel}`
-                }
-                hint={
-                  isToday
-                    ? "Your breakfast, lunch, snacks, and dinner will show up here."
-                    : undefined
-                }
-              />
-            )}
-            <div className="flex items-center justify-between border-t border-border bg-muted/40 px-5 py-4">
-              <span className="text-sm font-semibold">Total</span>
-              <span className="text-sm font-bold">
-                {consumed.toLocaleString()} kcal
-              </span>
-            </div>
-          </Card>
         </div>
 
         {/* Right rail */}
         <div className="flex flex-col gap-6">
-          {/* Daily goal */}
-          <Card>
-            <h2 className="font-semibold">Daily goal</h2>
-            {target !== null ? (
-              <div className="flex flex-col items-center gap-1 py-8 text-center">
-                <span className="flex items-baseline gap-1.5">
-                  <span className="text-4xl font-bold tracking-tight text-orange-600">
-                    {target.toLocaleString()}
-                  </span>
-                  <span className="text-sm font-semibold text-muted-foreground">
-                    kcal
-                  </span>
-                </span>
-                <p className="text-sm text-muted-foreground">
-                  {goalLabel
-                    ? `Personalized for your goal to ${goalLabel.toLowerCase()}`
-                    : "Your personalized daily target"}
-                </p>
-                <Link
-                  href="/settings"
-                  className="mt-3 rounded-lg border border-border px-4 py-2 text-xs font-medium transition-colors hover:bg-muted"
-                >
-                  Adjust in Settings
-                </Link>
-              </div>
-            ) : (
-              <EmptyState
-                icon={GoalsIcon}
-                title="No goal set"
-                hint="Set a daily calorie target in your settings to track progress."
-                action={
-                  <Link
-                    href="/settings"
-                    className="mt-1 rounded-lg border border-orange-600 px-4 py-2 text-sm font-semibold text-orange-600 transition-colors hover:bg-orange-50 dark:hover:bg-orange-950/40"
-                  >
-                    Go to Settings
-                  </Link>
-                }
-                className="px-0 py-8"
-              />
-            )}
-          </Card>
-
           {/* Kitchen */}
           <Card>
             <div className="flex items-center justify-between">
@@ -374,7 +334,7 @@ export default async function DashboardPage({
               {topDishes.length > 0 && (
                 <Link
                   href="/kitchen"
-                  className="text-xs font-medium text-orange-600 transition-colors hover:text-orange-700"
+                  className="-my-3 inline-flex shrink-0 items-center py-3 text-xs font-medium text-orange-600 transition-colors hover:text-orange-700"
                 >
                   View all
                 </Link>
@@ -434,17 +394,6 @@ export default async function DashboardPage({
                 className="px-0 py-8"
               />
             )}
-          </Card>
-
-          {/* Repeat dishes */}
-          <Card>
-            <h2 className="font-semibold">Repeat dishes</h2>
-            <EmptyState
-              icon={RestartIcon}
-              title="No repeat dishes yet"
-              hint="Meals you log often will appear here."
-              className="px-0 py-8"
-            />
           </Card>
         </div>
       </div>

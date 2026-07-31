@@ -3,29 +3,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "~/lib/utils";
-import {
-  GoalsIcon,
-  HomeIcon,
-  KitchenIcon,
-  LogsIcon,
-  ScanIcon,
-  SettingsIcon,
-  ShieldIcon,
-} from "./icons";
-
-const navItems = [
-  { label: "Home", href: "/dashboard", icon: HomeIcon },
-  { label: "Scan Meal", href: "/scan", icon: ScanIcon },
-  { label: "Kitchen", href: "/kitchen", icon: KitchenIcon },
-  { label: "Logs", href: "/logs", icon: LogsIcon },
-  { label: "Goals", href: "/goals", icon: GoalsIcon },
-  { label: "Settings", href: "/settings", icon: SettingsIcon },
-];
+import { ShieldIcon } from "./icons";
+import { NAV_ITEMS } from "./nav-items";
 
 /**
  * `isAdmin` comes from the layout, which already resolves the user server-side.
  * It only decides whether the link is *shown* — /admin re-checks the role on the
  * server and redirects, so hiding this is convenience, not the access control.
+ *
+ * Hidden below `lg`, where DashboardMobileNav takes over with the same items.
  */
 export function DashboardSidebar({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname();
@@ -41,7 +27,7 @@ export function DashboardSidebar({ isAdmin = false }: { isAdmin?: boolean }) {
       </Link>
 
       <nav className="flex flex-1 flex-col gap-1 p-3">
-        {navItems.map((item) => {
+        {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           const active = pathname === item.href;
           return (

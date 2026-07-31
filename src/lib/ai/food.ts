@@ -51,15 +51,17 @@ const questionSchema = z.object({
   helpText: z
     .string()
     .describe("Short clarifying hint, or an empty string if none is needed"),
+  // Single-choice only, enforced by the schema rather than left to the prompt.
+  // A free-form `"text"` kind used to be allowed here and the model reached for
+  // it often enough that people were hand-typing answers like "no" and "maggi".
+  // Typing is now reachable only by picking "Other (please specify)".
   type: z
-    .enum(["single", "text"])
-    .describe(
-      "'single' = pick one of `options`; 'text' = free-form answer (options is empty)",
-    ),
+    .enum(["single"])
+    .describe("Always 'single' — every question is multiple choice"),
   options: z
     .array(z.string())
     .describe(
-      "Answer choices for 'single' questions, ordered most→least common. Empty array for 'text'. If a catch-all is useful, make the LAST option exactly \"Other (please specify)\".",
+      'Between 2 and 6 answer choices, ordered most→least common. Never empty. If a written-in answer would genuinely help, make the LAST option exactly "Other (please specify)".',
     ),
 });
 
@@ -130,8 +132,9 @@ Rules for the questions:
   - Whether roti/naan is brushed with ghee/butter, or rice is plain vs fried/biryani.
 - For NON–South Asian food, focus on portion plus the main hidden macro drivers (added oil/butter, dressings/sauces, cheese, cooking method).
 - Only ask about factors that actually apply to the dish in the photo. Never ask more than 6 questions.
-- Prefer 'single' choice questions with quick options. Use 'text' only when a free-form answer is clearly better.
-- When a 'single' choice question needs a catch-all for answers the listed options don't cover, add it as the LAST option worded EXACTLY "Other (please specify)" — use that exact text, never variations like "Other", "Other (specify)", or "Something else". The app turns that option into a fill-in-the-blank field. Only add it when a written-in answer is genuinely useful (e.g. listing extra ingredients); don't put it on every question.
+- EVERY question must be multiple choice with 2–6 concrete options. Never ask the user to type a free-form answer, and never return an empty options array. If you would have asked an open question ("what brand is it?", "what else was added?"), turn it into the most likely named choices instead (e.g. "Maggi" / "Top Ramen" / "Wai Wai") and let "Other (please specify)" cover the rest.
+- If a question asks whether something optional was included (extra ingredients, added fat, toppings), the options MUST contain an explicit negative choice such as "None" or "No extra fat", so the honest answer is one tap.
+- When the listed options can't cover every real answer, add a catch-all as the LAST option worded EXACTLY "Other (please specify)" — that exact text, never variations like "Other", "Other (specify)", or "Something else". The app turns that one option into a fill-in-the-blank field, which is the only way a user should ever have to type. Only add it when a written-in answer is genuinely useful; don't put it on every question.
 - Keep every question answerable in a few seconds by a normal person looking at their meal.`;
 
 const ESTIMATE_SYSTEM = `You are a nutrition expert estimating the macros of a meal from a photo plus the user's answers to follow-up questions.

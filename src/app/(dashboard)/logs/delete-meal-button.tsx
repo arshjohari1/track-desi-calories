@@ -63,7 +63,8 @@ export function DeleteMealButton({
       aria-label={`Delete ${dishName}`}
       title={error ?? `Delete ${dishName}`}
       className={cn(
-        "flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/40",
+        // Finger-sized on touch screens, compact again once there's a cursor.
+        "flex size-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-600 sm:size-8 dark:hover:bg-red-950/40",
         error && "text-red-600",
       )}
     >

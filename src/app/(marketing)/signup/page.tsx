@@ -1,12 +1,23 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { signup } from "~/app/auth/actions";
 import { GoogleSignInButton } from "~/components/google-sign-in-button";
+import { createClient } from "~/lib/supabase/server";
 
 export default async function SignupPage({
   searchParams,
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
+  // Already signed in? There's nothing to do here — send them into the app.
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user) {
+    redirect("/dashboard");
+  }
+
   const { error } = await searchParams;
 
   return (
