@@ -70,16 +70,6 @@ export function LogsIcon(props: IconProps) {
   );
 }
 
-export function GoalsIcon(props: IconProps) {
-  return (
-    <Svg {...props}>
-      <circle cx="12" cy="12" r="9" />
-      <circle cx="12" cy="12" r="5" />
-      <circle cx="12" cy="12" r="1" />
-    </Svg>
-  );
-}
-
 export function SettingsIcon(props: IconProps) {
   return (
     <Svg {...props}>
@@ -95,15 +85,6 @@ export function UploadIcon(props: IconProps) {
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
       <path d="M17 8l-5-5-5 5" />
       <path d="M12 3v12" />
-    </Svg>
-  );
-}
-
-export function SearchIcon(props: IconProps) {
-  return (
-    <Svg {...props}>
-      <circle cx="11" cy="11" r="7" />
-      <path d="m21 21-4.3-4.3" />
     </Svg>
   );
 }
@@ -131,23 +112,6 @@ export function TrashIcon(props: IconProps) {
       <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
       <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
       <path d="M10 11v6M14 11v6" />
-    </Svg>
-  );
-}
-
-export function RestartIcon(props: IconProps) {
-  return (
-    <Svg {...props}>
-      <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
-      <path d="M3 3v5h5" />
-    </Svg>
-  );
-}
-
-export function ChevronRightIcon(props: IconProps) {
-  return (
-    <Svg {...props}>
-      <path d="m9 6 6 6-6 6" />
     </Svg>
   );
 }
@@ -196,24 +160,44 @@ export function SpiceIcon(props: IconProps) {
   );
 }
 
-export function ScaleIcon(props: IconProps) {
+export function MenuIcon(props: IconProps) {
   return (
     <Svg {...props}>
-      <path d="M12 3v18" />
-      <path d="M7 7h10" />
-      <path d="M4 11l3-4 3 4a3 3 0 0 1-6 0Z" />
-      <path d="M14 11l3-4 3 4a3 3 0 0 1-6 0Z" />
-      <path d="M8 21h8" />
+      <path d="M4 6h16M4 12h16M4 18h16" />
     </Svg>
   );
 }
 
-export function MoreIcon(props: IconProps) {
+export function CloseIcon(props: IconProps) {
   return (
     <Svg {...props}>
-      <circle cx="12" cy="5" r="1.5" />
-      <circle cx="12" cy="12" r="1.5" />
-      <circle cx="12" cy="19" r="1.5" />
+      <path d="M6 6l12 12M18 6L6 18" />
+    </Svg>
+  );
+}
+
+export function SunIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+    </Svg>
+  );
+}
+
+export function MoonIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.5 6.5 0 0 0 9.8 9.8Z" />
+    </Svg>
+  );
+}
+
+export function MonitorIcon(props: IconProps) {
+  return (
+    <Svg {...props}>
+      <rect x="3" y="4" width="18" height="12" rx="2" />
+      <path d="M8 20h8M12 16v4" />
     </Svg>
   );
 }

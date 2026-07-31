@@ -37,7 +37,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ label });
   } catch (err) {
     console.error("[scan/label]", err);
-    const { status, message } = describeAiError(err);
+    const { status, message, reason } = describeAiError(err);
+    console.error("[scan/label] reason:", reason);
     return NextResponse.json({ error: message }, { status });
   }
 }

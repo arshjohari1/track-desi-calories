@@ -1,125 +1,49 @@
 import Image from "next/image";
+import { Comparison } from "~/components/comparison";
+import { ContactMenu } from "~/components/contact-menu";
 import { InteractiveLanding } from "~/components/interactive-landing";
 import { RotatingPhrase } from "~/components/rotating-phrase";
 
-function MealMockup() {
+/**
+ * The hero shot: a real result screen, not a mockup.
+ *
+ * This replaced a hand-built fake card showing invented numbers for a dish the
+ * app had never analysed. A genuine screenshot is a stronger claim and can't
+ * drift away from what the product actually renders.
+ *
+ * `priority` because it's the largest above-the-fold image — without it Next
+ * lazy-loads it and it arrives after first paint.
+ */
+function HeroScreenshot() {
   return (
-    <div className="w-full">
-      <div className="rounded-2xl bg-card border border-border shadow-2xl overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-border">
-          <div className="flex items-center gap-3">
-            <span className="text-muted-foreground text-sm">←</span>
-            <span className="font-semibold text-sm">Dinner log</span>
-          </div>
-          <span className="text-muted-foreground tracking-widest">···</span>
-        </div>
-
-        {/* Body */}
-        <div className="flex">
-          {/* Photo */}
-          <div className="w-[38%] border-r border-border flex-shrink-0">
-            <div className="aspect-[3/4] overflow-hidden">
-              <Image
-                src="/chicken-curry.jpg"
-                alt="Chicken curry with basmati rice"
-                width={400}
-                height={400}
-                className="w-full h-full object-cover"
-              />
-            </div>
-          </div>
-
-          {/* Cooking details */}
-          <div className="w-[38%] border-r border-border flex-shrink-0 p-4">
-            <p className="text-xs font-semibold mb-3">Cooking details</p>
-            <div className="space-y-3">
-              <div>
-                <p className="text-[10px] text-muted-foreground mb-1">
-                  What oil was used?
-                </p>
-                <div className="flex items-center justify-between rounded border border-border bg-muted px-2 py-1.5 text-xs">
-                  <span>Mustard oil</span>
-                  <span className="text-muted-foreground">↓</span>
-                </div>
-              </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground mb-1">
-                  How many servings?
-                </p>
-                <div className="rounded border border-border bg-background px-2 py-1.5 text-xs">
-                  1.5 servings
-                </div>
-              </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground mb-1">
-                  Ghee added after cooking?
-                </p>
-                <div className="rounded border border-border bg-background px-2 py-1.5 text-xs">
-                  Yes, 1 tsp
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Calorie estimate */}
-          <div className="flex-1 p-4 flex flex-col">
-            <p className="text-[10px] text-muted-foreground mb-2">
-              Estimated calories
-            </p>
-            <div className="text-4xl font-bold text-orange-600 leading-none">
-              612
-            </div>
-            <div className="text-xs font-semibold text-orange-600 mb-2">
-              kcal
-            </div>
-            <div className="flex items-start gap-1 mb-auto">
-              <span className="text-teal-600 text-xs leading-none mt-px">
-                ✓
-              </span>
-              <span className="text-[10px] text-teal-600 leading-tight">
-                Calibrated for home-style prep
-              </span>
-            </div>
-            <button
-              type="button"
-              className="mt-4 w-full rounded-lg bg-orange-600 text-white py-2 text-xs font-semibold"
-            >
-              Save meal
-            </button>
-            <button
-              type="button"
-              className="mt-1.5 w-full rounded-lg border border-border py-2 text-xs text-foreground"
-            >
-              Restart
-            </button>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="px-5 py-3 border-t border-border bg-muted/40">
-          <p className="font-medium text-sm">Chicken curry with basmati rice</p>
-          <div className="flex items-center gap-2 mt-0.5">
-            <span className="text-xs font-bold text-orange-600">612 kcal</span>
-            <span className="text-muted-foreground text-xs">
-              · Saved to Kitchen: Mom's Chicken Curry Recipe
-            </span>
-          </div>
-        </div>
-      </div>
+    <div className="w-full overflow-hidden rounded-2xl border border-border shadow-2xl">
+      <Image
+        src="/screens/macros.png"
+        alt="A finished scan in TrackDesiCalories: rajma chawal at 550 kcal with protein, carbs, fat, fiber and sugar, a high-confidence badge, and the assumptions behind the estimate"
+        width={1132}
+        height={763}
+        priority
+        className="h-auto w-full"
+      />
     </div>
   );
 }
 
 export default function Home() {
   return (
-    <div className="bg-orange-50 min-h-screen">
+    <div className="bg-orange-50 dark:bg-orange-950/20 min-h-screen">
       {/* Hero */}
-      <section className="px-6 py-20 lg:px-16 xl:px-24">
-        <div className="grid grid-cols-1 lg:grid-cols-[2fr_3fr] gap-12 items-center">
+      <section className="px-4 py-12 sm:px-6 sm:py-20 lg:px-16 xl:px-24">
+        {/* Capped so the hero stops stretching on ultra-wide displays, where it
+            was running to ~1700px while every other section caps at max-w-6xl.
+            Viewports up to ~1470px are unaffected. */}
+        <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-10 lg:grid-cols-[2fr_3fr] lg:gap-12">
           {/* Left */}
           <div className="flex flex-col gap-6">
-            <span className="text-sm font-semibold text-teal-700">
+            {/* Brand orange. `orange-700` rather than the `orange-600` used for
+                buttons: 600 sits too close to the warm section background to
+                read as an accent. */}
+            <span className="text-sm font-semibold text-orange-700 dark:text-orange-400">
               Made for South Asian home cooking
             </span>
             <RotatingPhrase />
@@ -128,16 +52,16 @@ export default function Home() {
               accurate calorie count for real desi food — from dal tadka to
               chicken curry to aloo paratha.
             </p>
-            <div className="flex flex-wrap items-center gap-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
               <a
                 href="#how-it-works"
-                className="rounded-lg border border-border bg-background px-6 py-3 font-semibold text-foreground hover:bg-muted transition-colors"
+                className="rounded-lg border border-border bg-background px-6 py-3 text-center font-semibold text-foreground transition-colors hover:bg-muted"
               >
                 See how it works
               </a>
               <a
                 href="/signup"
-                className="rounded-lg bg-orange-600 px-6 py-3 font-semibold text-white hover:bg-orange-700 transition-colors"
+                className="rounded-lg bg-orange-600 px-6 py-3 text-center font-semibold text-white transition-colors hover:bg-orange-700"
               >
                 Get started
               </a>
@@ -148,26 +72,30 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Right — mockup */}
-          <MealMockup />
+          {/* Right — real result screen */}
+          <HeroScreenshot />
         </div>
       </section>
 
       <InteractiveLanding />
 
-      {/* CTA */}
-      <section className="bg-background py-24 text-center">
-        <div className="mx-auto max-w-2xl px-6">
-          <h2 className="text-4xl font-bold tracking-tight mb-4">
+      <Comparison />
+
+      {/* CTA — warm tint keeps the section colours alternating: hero (warm),
+          how it works (plain), features (warm), comparison (plain), this (warm).
+          No border-t needed now; the colour change is the separator. */}
+      <section className="bg-orange-50 py-16 text-center sm:py-24 dark:bg-orange-950/20">
+        <div className="mx-auto max-w-2xl px-4 sm:px-6">
+          <h2 className="mb-4 text-3xl font-bold tracking-tight sm:text-4xl">
             Ready to track your desi meals?
           </h2>
-          <p className="text-lg text-muted-foreground mb-10">
+          <p className="mb-8 text-base text-muted-foreground sm:mb-10 sm:text-lg">
             Stop guessing calories for dal, roti, and sabzi. Get accurate counts
             built around how South Asian food is actually cooked.
           </p>
           <a
             href="/signup"
-            className="rounded-lg bg-orange-600 px-8 py-4 text-lg font-semibold text-white transition-colors hover:bg-orange-700"
+            className="inline-block rounded-lg bg-orange-600 px-8 py-4 text-base font-semibold text-white transition-colors hover:bg-orange-700 sm:text-lg"
           >
             Get started free
           </a>
@@ -176,7 +104,7 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="border-t border-border bg-background py-8">
-        <div className="mx-auto max-w-6xl px-6 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 text-center sm:px-6 md:flex-row md:text-left">
           <div className="flex items-center gap-2 font-bold">
             <span>🍛</span>
             <span>TrackDesiCalories</span>
@@ -184,11 +112,10 @@ export default function Home() {
           <p className="text-sm text-muted-foreground">
             Desi food, accurately counted.
           </p>
-          <div className="flex items-center gap-6 text-sm text-muted-foreground">
-            <span>Privacy</span>
-            <span>Terms</span>
-            <span>Contact</span>
-          </div>
+          {/* Privacy and Terms were plain <span>s with nothing behind them —
+              they looked like links and did nothing, so they're gone until
+              there are real pages to point at. */}
+          <ContactMenu />
         </div>
       </footer>
     </div>

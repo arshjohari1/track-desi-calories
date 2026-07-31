@@ -398,7 +398,7 @@ export function LabelFlow() {
           )}
 
           {/* Product + editable per-serving values */}
-          <div className="grid gap-4 sm:grid-cols-[180px_1fr]">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-[180px_1fr]">
             <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-border bg-card p-4 text-center">
               {imageUrl && (
                 // biome-ignore lint/performance/noImgElement: transient local data URL, not a remote asset
@@ -408,13 +408,16 @@ export function LabelFlow() {
                   className="aspect-square w-full rounded-lg object-cover"
                 />
               )}
+              {/* Qualified the same way as the photo flow's badges: this one is
+                  about how cleanly the label was read, not about an estimate. */}
               <span
                 className={cn(
-                  "rounded-full px-2.5 py-0.5 text-xs font-medium capitalize",
+                  "rounded-full px-2.5 py-0.5 text-xs font-medium",
                   CONFIDENCE_STYLES[reading.confidence],
                 )}
               >
-                {reading.confidence} confidence
+                <span className="capitalize">{reading.confidence}</span>{" "}
+                confidence · label read
               </span>
             </div>
 
@@ -636,7 +639,7 @@ export function LabelFlow() {
           </div>
 
           {/* What will be logged */}
-          <div className="grid gap-4 sm:grid-cols-[200px_1fr]">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-[200px_1fr]">
             <div className="flex flex-col items-center justify-center gap-1 rounded-xl border border-orange-600/30 bg-orange-600/5 p-5 text-center">
               <span className="text-4xl font-bold tracking-tight text-orange-600">
                 {scaled.calories.toLocaleString()}

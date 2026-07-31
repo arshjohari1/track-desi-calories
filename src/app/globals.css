@@ -1,50 +1,101 @@
 @import "tailwindcss";
 
+/**
+ * Drive the `dark:` variant off the `.dark` class instead of the OS setting.
+ *
+ * Tailwind v4's default `dark:` is `@media (prefers-color-scheme: dark)`. That
+ * left the app half-themed: the design tokens below key off `.dark` and flipped
+ * correctly with the in-app toggle, but all 72 `dark:` utilities — every
+ * `dark:text-orange-400`, `dark:bg-red-950`, the drawer backdrops, the confidence
+ * colours — only responded to the operating system. Choosing "Dark" in Settings
+ * on a light-mode OS produced light-cream panels with pale grey text on them.
+ *
+ * With this variant both halves key off the same class, and OS-following still
+ * works because next-themes adds `.dark` when the system prefers dark.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/**
+ * OKLCH design tokens (zinc-based).
+ *
+ * The raw values live on `:root` / `.dark` as plain custom properties, and the
+ * `@theme inline` block below maps Tailwind's `--color-*` namespace onto them.
+ * `inline` matters here: it makes `bg-card` compile to
+ * `background-color: var(--card)` instead of baking in the literal light value,
+ * so flipping the `.dark` class on <html> re-resolves every surface.
+ * Declaring the literals directly inside `@theme inline` would inline the light
+ * values and leave dark mode dead.
+ */
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --muted: oklch(0.967 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --border: oklch(0.92 0 0);
+  --input: oklch(0.92 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.967 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --accent: oklch(0.967 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --ring: oklch(0.556 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  /* Cards sit a step above the page instead of matching it — at equal lightness
+     every card on the dashboard would vanish into the background. */
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  /* Card edges and row dividers carry most of the structure in dark mode, so
+     the border reads a step brighter here than a straight tone-inversion. */
+  --border: oklch(0.32 0 0);
+  --input: oklch(0.36 0 0);
+  --primary: oklch(0.985 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  /* Lifted from the light value, which was too dark to read on a dark page. */
+  --destructive: oklch(0.7 0.19 25);
+  --ring: oklch(0.556 0 0);
+}
+
 @theme inline {
-  /* OKLCH Design Tokens — Light Mode Default (zinc) */
-  --color-background: oklch(1 0 0);
-  --color-foreground: oklch(0.145 0 0);
-  --color-muted: oklch(0.967 0 0);
-  --color-muted-foreground: oklch(0.556 0 0);
-  --color-card: oklch(1 0 0);
-  --color-card-foreground: oklch(0.145 0 0);
-  --color-popover: oklch(1 0 0);
-  --color-popover-foreground: oklch(0.145 0 0);
-  --color-border: oklch(0.92 0 0);
-  --color-input: oklch(0.92 0 0);
-  --color-primary: oklch(0.205 0 0);
-  --color-primary-foreground: oklch(0.985 0 0);
-  --color-secondary: oklch(0.967 0 0);
-  --color-secondary-foreground: oklch(0.205 0 0);
-  --color-accent: oklch(0.967 0 0);
-  --color-accent-foreground: oklch(0.205 0 0);
-  --color-destructive: oklch(0.577 0.245 27.325);
-  --color-ring: oklch(0.556 0 0);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-ring: var(--ring);
   --radius-sm: 0.25rem;
   --radius-md: 0.375rem;
   --radius-lg: 0.5rem;
   --radius-xl: 0.75rem;
-}
-
-.dark {
-  --color-background: oklch(0.145 0 0);
-  --color-foreground: oklch(0.985 0 0);
-  --color-muted: oklch(0.269 0 0);
-  --color-muted-foreground: oklch(0.708 0 0);
-  --color-card: oklch(0.145 0 0);
-  --color-card-foreground: oklch(0.985 0 0);
-  --color-popover: oklch(0.145 0 0);
-  --color-popover-foreground: oklch(0.985 0 0);
-  --color-border: oklch(0.269 0 0);
-  --color-input: oklch(0.269 0 0);
-  --color-primary: oklch(0.985 0 0);
-  --color-primary-foreground: oklch(0.205 0 0);
-  --color-secondary: oklch(0.269 0 0);
-  --color-secondary-foreground: oklch(0.985 0 0);
-  --color-accent: oklch(0.269 0 0);
-  --color-accent-foreground: oklch(0.985 0 0);
-  --color-destructive: oklch(0.396 0.141 25.723);
-  --color-ring: oklch(0.556 0 0);
 }
 
 @layer base {
@@ -55,3 +106,60 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Drawer entrance. Deliberately keyframes rather than a JS-driven transition:
+   the animation is decoration, and open/close never waits on it. */
+@keyframes slide-in-left {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left 0.22s ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.22s ease-out;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.22s ease-out;
+}
+
+/* Respect the OS "reduce motion" setting. The rotating hero phrase and the
+   landing slide-over animate via *inline* styles, and an `!important` rule in a
+   stylesheet is the only declaration that outranks an inline one — hence the
+   blanket override rather than per-component classes. */
+/* biome-ignore-start lint/complexity/noImportantStyles: required to outrank the inline transition styles on RotatingPhrase and SidebarPanel */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+/* biome-ignore-end lint/complexity/noImportantStyles: end of reduced-motion override */

@@ -25,7 +25,12 @@ export function RotatingPhrase() {
   }, []);
 
   return (
-    <h1 className="text-5xl font-bold tracking-tight leading-[1.2] min-h-[10.8rem]">
+    // "TrackDesiCalories." is a single unbreakable word ~8.8em wide, so the font
+    // size — not wrapping — is what decides whether the hero fits. At 48px it
+    // needed 424px and blew a 320px viewport out by 128px, so the ramp starts at
+    // 30px. min-height is reserved per step to stop the rotation shifting the
+    // page as phrases of different lengths swap in.
+    <h1 className="min-h-[9rem] text-3xl font-bold leading-[1.2] tracking-tight sm:min-h-[10rem] sm:text-4xl lg:min-h-[10.8rem] lg:text-5xl">
       <span
         className="block"
         style={{

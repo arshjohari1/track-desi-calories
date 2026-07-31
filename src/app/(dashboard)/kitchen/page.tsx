@@ -47,14 +47,19 @@ export default async function KitchenPage() {
         </div>
         <Link
           href="/scan"
-          className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium transition-colors hover:bg-muted"
+          className="flex h-11 items-center gap-2 rounded-lg border border-border px-4 text-sm font-medium transition-colors hover:bg-muted sm:h-10"
         >
           <UploadIcon className="size-4" />
           Scan something new
         </Link>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {/* The explicit `grid-cols-1` is load-bearing: without it the base
+          breakpoint gets an implicit `auto` track sized to min-content, and a
+          card's nowrap serving line stretched the column to 514px inside a
+          288px container. `grid-cols-1` compiles to minmax(0, 1fr), which
+          clamps it. */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {dishes.map((dish) => (
           <KitchenDishCard key={dish.id} dish={dish} />
         ))}

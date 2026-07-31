@@ -145,7 +145,8 @@ export function SaveToKitchenButton({
         aria-label={`Save ${defaultName} to Kitchen`}
         title={error ?? `Save ${defaultName} to Kitchen`}
         className={cn(
-          "flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-orange-50 hover:text-orange-600 dark:hover:bg-orange-950/40",
+          // Finger-sized on touch screens, compact again once there's a cursor.
+          "flex size-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-orange-50 hover:text-orange-600 sm:size-8 dark:hover:bg-orange-950/40",
           error && "text-red-600",
         )}
       >

@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
+import { ThemeToggle } from "~/components/theme-toggle";
 import { cn } from "~/lib/utils";
 
 const tabs = [
@@ -31,7 +32,7 @@ function Toggle({
       className={cn(
         "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors",
         checked
-          ? "bg-teal-600"
+          ? "bg-orange-600"
           : "bg-muted-foreground/30 dark:bg-muted-foreground/40",
       )}
     >
@@ -116,7 +117,7 @@ function AccountTab() {
       {/* Account details */}
       <section className="rounded-xl border border-border bg-card p-6">
         <h2 className="mb-6 text-lg font-semibold">Account details</h2>
-        <div className="grid gap-5 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <InputField label="Full name" placeholder="Your name" />
           <InputField
             label="Email address"
@@ -161,10 +162,20 @@ function AccountTab() {
         </div>
       </section>
 
+      {/* Appearance */}
+      <section className="rounded-xl border border-border bg-card p-6">
+        <h2 className="mb-2 text-lg font-semibold">Appearance</h2>
+        <p className="mb-5 text-sm text-muted-foreground">
+          Choose how TrackDesiCalories looks. Applies instantly and is
+          remembered on this device.
+        </p>
+        <ThemeToggle />
+      </section>
+
       {/* Diet preferences */}
       <section className="rounded-xl border border-border bg-card p-6">
         <h2 className="mb-6 text-lg font-semibold">Diet preferences</h2>
-        <div className="grid gap-x-12 gap-y-5 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-x-12 gap-y-5 sm:grid-cols-2">
           <div className="flex items-center justify-between">
             <span className="text-sm">Use metric units</span>
             <Toggle checked={useMetric} onChange={setUseMetric} />
@@ -204,7 +215,7 @@ function AccountTab() {
       {/* Kitchen defaults */}
       <section className="rounded-xl border border-border bg-card p-6">
         <h2 className="mb-6 text-lg font-semibold">Kitchen defaults</h2>
-        <div className="grid gap-5 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
           <SelectField
             label="Default oil"
             value="Mustard oil"
@@ -241,7 +252,7 @@ function AccountTab() {
       {/* Privacy */}
       <section className="rounded-xl border border-border bg-card p-6">
         <h2 className="mb-6 text-lg font-semibold">Privacy</h2>
-        <div className="grid gap-x-12 gap-y-5 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-x-12 gap-y-5 sm:grid-cols-2">
           <div className="space-y-5">
             <div className="flex items-center justify-between">
               <span className="text-sm">Make meal logs private</span>

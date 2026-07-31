@@ -3,14 +3,13 @@ import type { Meal } from "~/lib/meals";
 import { cn } from "~/lib/utils";
 import { SpiceIcon } from "./icons";
 
-const CONFIDENCE_STYLES: Record<NonNullable<Meal["confidence"]>, string> = {
-  high: "text-green-700 dark:text-green-400",
-  medium: "text-orange-700 dark:text-orange-400",
-  low: "text-red-700 dark:text-red-400",
-};
-
 /** A single logged meal: thumbnail, name + portion, macro breakdown, calories.
- * Pass `action` to render a trailing control (e.g. a delete button in Logs). */
+ * Pass `action` to render a trailing control (e.g. a delete button in Logs).
+ *
+ * Deliberately no confidence badge. Confidence is useful while you're deciding
+ * whether to accept an estimate, which is the scan screen's job — once the meal
+ * is logged the number is the number, and repeating "medium" on every row was
+ * noise. It is still stored on the meal and shown during the scan. */
 export function MealRow({ meal, action }: { meal: Meal; action?: ReactNode }) {
   const time = new Date(meal.eatenAt).toLocaleTimeString(undefined, {
     hour: "numeric",
@@ -18,7 +17,11 @@ export function MealRow({ meal, action }: { meal: Meal; action?: ReactNode }) {
   });
 
   return (
-    <div className="flex items-center gap-3 px-5 py-3">
+    // Wraps on narrow screens: with a trailing action slot, thumbnail + name +
+    // calories + buttons on one line squeezed the name column to ~76px at 320px.
+    // The `min-w-36` floor on the name column overflows the line just enough to
+    // push the action block onto its own row, where it right-aligns.
+    <div className="flex flex-wrap items-center gap-3 px-4 py-3 sm:flex-nowrap sm:px-5">
       {meal.imageUrl ? (
         // biome-ignore lint/performance/noImgElement: stored data URL, not a remote asset
         <img
@@ -32,7 +35,7 @@ export function MealRow({ meal, action }: { meal: Meal; action?: ReactNode }) {
         </span>
       )}
 
-      <div className="min-w-0 flex-1">
+      <div className={cn("flex-1", action ? "min-w-36 sm:min-w-0" : "min-w-0")}>
         <div className="flex items-center gap-1.5">
           <p className="truncate font-medium">{meal.dishName}</p>
           {meal.isSouthAsian && (
@@ -57,19 +60,9 @@ export function MealRow({ meal, action }: { meal: Meal; action?: ReactNode }) {
           {Math.round(meal.calories).toLocaleString()}
         </p>
         <p className="mt-0.5 text-xs text-muted-foreground">kcal</p>
-        {meal.confidence && (
-          <p
-            className={cn(
-              "mt-0.5 text-[10px] font-medium capitalize",
-              CONFIDENCE_STYLES[meal.confidence],
-            )}
-          >
-            {meal.confidence}
-          </p>
-        )}
       </div>
 
-      {action && <div className="shrink-0">{action}</div>}
+      {action && <div className="ml-auto shrink-0 sm:ml-0">{action}</div>}
     </div>
   );
 }
