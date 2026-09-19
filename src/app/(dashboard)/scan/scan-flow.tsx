@@ -11,11 +11,13 @@ import {
   UploadIcon,
 } from "~/components/dashboard/icons";
 import { SaveToKitchenButton } from "~/components/dashboard/save-to-kitchen-button";
+import { ScanLimitCard } from "~/components/dashboard/scan-limit-card";
 import type { FoodAnalysis, FoodMacros } from "~/lib/ai/food";
 import {
   dataUrlToThumbnail,
   fileToCompressedDataUrl,
   postJson,
+  ScanRequestError,
 } from "~/lib/scan-client";
 import { cn } from "~/lib/utils";
 import { logMeal } from "./actions";
@@ -53,6 +55,9 @@ export function ScanFlow() {
   const [otherActive, setOtherActive] = useState<Record<string, boolean>>({});
   const [macros, setMacros] = useState<FoodMacros | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Set when the free daily scan limit is hit — swaps the dropzone for an
+  // upgrade prompt rather than a red error.
+  const [limitMessage, setLimitMessage] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [logState, setLogState] = useState<LogState>("idle");
   const [logError, setLogError] = useState<string | null>(null);
@@ -68,6 +73,7 @@ export function ScanFlow() {
     setOtherActive({});
     setMacros(null);
     setError(null);
+    setLimitMessage(null);
     setLogState("idle");
     setLogError(null);
   }, []);
@@ -106,6 +112,7 @@ export function ScanFlow() {
       return;
     }
     setError(null);
+    setLimitMessage(null);
     setMacros(null);
     setAnalysis(null);
     setAnswers({});
@@ -132,6 +139,13 @@ export function ScanFlow() {
       setAnalysis(result);
       setStep("questions");
     } catch (err) {
+      if (err instanceof ScanRequestError && err.code === "scan_limit") {
+        setLimitMessage(err.message);
+        setImageUrl(null);
+        setThumbUrl(null);
+        setStep("upload");
+        return;
+      }
       setError(err instanceof Error ? err.message : "Analysis failed.");
       setStep("upload");
     }
@@ -191,6 +205,8 @@ export function ScanFlow() {
         </p>
       )}
 
+      {limitMessage && <ScanLimitCard message={limitMessage} />}
+
       {/* Hidden file input drives every "choose a photo" affordance. */}
       <input
         ref={fileInputRef}
@@ -200,7 +216,7 @@ export function ScanFlow() {
         className="hidden"
       />
 
-      {step === "upload" && (
+      {step === "upload" && !limitMessage && (
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}

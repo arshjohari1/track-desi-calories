@@ -34,6 +34,12 @@ export async function Navbar() {
         {/* Nav links — perfectly centered */}
         <div className="hidden items-center justify-center gap-8 md:flex">
           <MarketingSectionLinks />
+          <Link
+            href="/pricing"
+            className="text-sm text-muted-foreground decoration-orange-600 underline-offset-4 transition-colors hover:text-foreground hover:underline"
+          >
+            Pricing
+          </Link>
         </div>
 
         {/* Right — auth buttons on md+, drawer below */}

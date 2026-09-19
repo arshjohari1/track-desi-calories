@@ -1,12 +1,39 @@
 "use server";
 
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { FREE_KITCHEN_DISHES } from "~/lib/billing/constants";
+import { fetchSubscription } from "~/lib/billing/subscription";
+import { fetchKitchenDishCount } from "~/lib/kitchen";
 import { createClient } from "~/lib/supabase/server";
 
 export type KitchenResult =
   | { ok: true }
-  | { ok: false; error: string; code?: "duplicate" };
+  | { ok: false; error: string; code?: "duplicate" | "limit" };
+
+/**
+ * The free tier caps saved dishes at {@link FREE_KITCHEN_DISHES}; premium is
+ * unlimited. Returns an error result when the limit is hit, or null to proceed.
+ * Enforced at every save action so a client can't route around it.
+ */
+async function checkKitchenLimit(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<KitchenResult | null> {
+  const { isPremium } = await fetchSubscription(supabase, userId);
+  if (isPremium) return null;
+
+  const count = await fetchKitchenDishCount(supabase, userId);
+  if (count >= FREE_KITCHEN_DISHES) {
+    return {
+      ok: false,
+      code: "limit",
+      error: `Your free plan saves up to ${FREE_KITCHEN_DISHES} dishes. Go Premium for an unlimited Kitchen.`,
+    };
+  }
+  return null;
+}
 
 /** Postgres unique_violation — the (user_id, lower(name)) index rejected a dupe. */
 const UNIQUE_VIOLATION = "23505";
@@ -66,6 +93,9 @@ export async function saveDishToKitchen(
   if (!user) {
     return { ok: false, error: "You need to be signed in to save a dish." };
   }
+
+  const limit = await checkKitchenLimit(supabase, user.id);
+  if (limit) return limit;
 
   const d = parsed.data;
   const { error } = await supabase.from("kitchen_dishes").insert({
@@ -132,6 +162,9 @@ export async function saveMealToKitchen(
   if (!user) {
     return { ok: false, error: "You need to be signed in to save a dish." };
   }
+
+  const limit = await checkKitchenLimit(supabase, user.id);
+  if (limit) return limit;
 
   const { data: meal, error: readError } = await supabase
     .from("meals")

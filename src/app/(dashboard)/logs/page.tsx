@@ -2,6 +2,9 @@ import Link from "next/link";
 import { LogsIcon, UploadIcon } from "~/components/dashboard/icons";
 import { MealRow } from "~/components/dashboard/meal-row";
 import { SaveToKitchenButton } from "~/components/dashboard/save-to-kitchen-button";
+import { FREE_HISTORY_DAYS } from "~/lib/billing/constants";
+import { fetchSubscription } from "~/lib/billing/subscription";
+import { startOfDay } from "~/lib/date";
 import { fetchMeals, groupMealsByDay } from "~/lib/meals";
 import { createClient } from "~/lib/supabase/server";
 import { getUserTimeZone } from "~/lib/timezone";
@@ -34,7 +37,17 @@ export default async function LogsPage({
 
   const limit = parseLimit((await searchParams).limit);
   const timeZone = await getUserTimeZone();
-  const meals = await fetchMeals(supabase, user?.id ?? "", { limit });
+  const subscription = await fetchSubscription(supabase, user?.id ?? "");
+
+  // Free users see a rolling recent window; premium sees the full history.
+  const since = subscription.isPremium
+    ? undefined
+    : startOfDay(
+        timeZone,
+        new Date(Date.now() - FREE_HISTORY_DAYS * 24 * 60 * 60 * 1000),
+      );
+
+  const meals = await fetchMeals(supabase, user?.id ?? "", { limit, since });
   const days = groupMealsByDay(meals, timeZone);
   // A full page back means there are probably older meals still unfetched.
   const hasMore = meals.length >= limit && limit < MAX_LIMIT;
@@ -126,6 +139,24 @@ export default async function LogsPage({
             className="rounded-lg border border-border px-4 py-2.5 text-sm font-medium transition-colors hover:bg-muted"
           >
             Load older meals
+          </Link>
+        </div>
+      )}
+
+      {!subscription.isPremium && (
+        <div className="mt-8 rounded-xl border border-orange-600/30 bg-orange-600/5 p-5 text-center">
+          <p className="font-semibold">
+            Showing your last {FREE_HISTORY_DAYS} days
+          </p>
+          <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
+            Go Premium to see your full history, unlock trends, and export your
+            data as CSV.
+          </p>
+          <Link
+            href="/pricing"
+            className="mt-4 inline-flex items-center gap-2 rounded-lg bg-orange-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-700"
+          >
+            See Premium
           </Link>
         </div>
       )}

@@ -10,6 +10,7 @@ import {
   UploadIcon,
 } from "~/components/dashboard/icons";
 import { SaveToKitchenButton } from "~/components/dashboard/save-to-kitchen-button";
+import { ScanLimitCard } from "~/components/dashboard/scan-limit-card";
 import {
   type AmountInput,
   type AmountMode,
@@ -24,6 +25,7 @@ import {
   dataUrlToThumbnail,
   fileToCompressedDataUrl,
   postJson,
+  ScanRequestError,
 } from "~/lib/scan-client";
 import { cn } from "~/lib/utils";
 import { logMeal } from "./actions";
@@ -99,6 +101,9 @@ export function LabelFlow() {
   const [thumbUrl, setThumbUrl] = useState<string | null>(null);
   const [reading, setReading] = useState<LabelReading | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Set when the free daily scan limit is hit — swaps the dropzone for an
+  // upgrade prompt rather than a red error.
+  const [limitMessage, setLimitMessage] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
 
   // Editable per-serving values (strings so the fields can be cleared/typed).
@@ -127,6 +132,7 @@ export function LabelFlow() {
     setThumbUrl(null);
     setReading(null);
     setError(null);
+    setLimitMessage(null);
     setProductName("");
     setFields(EMPTY_FIELDS);
     setAmountMode("servings");
@@ -144,6 +150,7 @@ export function LabelFlow() {
       return;
     }
     setError(null);
+    setLimitMessage(null);
     setReading(null);
 
     let dataUrl: string;
@@ -186,6 +193,13 @@ export function LabelFlow() {
       setAmountMode("servings");
       setStep("result");
     } catch (err) {
+      if (err instanceof ScanRequestError && err.code === "scan_limit") {
+        setLimitMessage(err.message);
+        setImageUrl(null);
+        setThumbUrl(null);
+        setStep("upload");
+        return;
+      }
       setError(
         err instanceof Error ? err.message : "Couldn't read that label.",
       );
@@ -323,6 +337,8 @@ export function LabelFlow() {
         </p>
       )}
 
+      {limitMessage && <ScanLimitCard message={limitMessage} />}
+
       <input
         ref={fileInputRef}
         type="file"
@@ -331,7 +347,7 @@ export function LabelFlow() {
         className="hidden"
       />
 
-      {step === "upload" && (
+      {step === "upload" && !limitMessage && (
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}

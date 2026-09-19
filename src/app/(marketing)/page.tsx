@@ -2,6 +2,7 @@ import Image from "next/image";
 import { Comparison } from "~/components/comparison";
 import { ContactMenu } from "~/components/contact-menu";
 import { InteractiveLanding } from "~/components/interactive-landing";
+import { PricingSection } from "~/components/pricing-section";
 import { RotatingPhrase } from "~/components/rotating-phrase";
 
 /**
@@ -81,9 +82,11 @@ export default function Home() {
 
       <Comparison />
 
-      {/* CTA — warm tint keeps the section colours alternating: hero (warm),
-          how it works (plain), features (warm), comparison (plain), this (warm).
-          No border-t needed now; the colour change is the separator. */}
+      <PricingSection />
+
+      {/* CTA — warm tint after the plain pricing section keeps the colours
+          alternating: hero (warm), how it works (plain), features (warm),
+          comparison (plain), pricing (plain, own border-t), this (warm). */}
       <section className="bg-orange-50 py-16 text-center sm:py-24 dark:bg-orange-950/20">
         <div className="mx-auto max-w-2xl px-4 sm:px-6">
           <h2 className="mb-4 text-3xl font-bold tracking-tight sm:text-4xl">

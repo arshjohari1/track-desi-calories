@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import {
   type SaveDishInput,
@@ -37,6 +38,8 @@ export function SaveToKitchenButton({
   const [saved, setSaved] = useState(false);
   const [name, setName] = useState(defaultName.slice(0, 200));
   const [error, setError] = useState<string | null>(null);
+  // Whether the last failure was the free Kitchen limit, so we can offer upgrade.
+  const [limitHit, setLimitHit] = useState(false);
   const [pending, startTransition] = useTransition();
 
   // Re-seed the field when the caller's name changes. The label flow lets the
@@ -60,6 +63,7 @@ export function SaveToKitchenButton({
       return;
     }
     setError(null);
+    setLimitHit(false);
     startTransition(async () => {
       const result = mealId
         ? await saveMealToKitchen(mealId, trimmed)
@@ -72,6 +76,7 @@ export function SaveToKitchenButton({
         setOpen(false);
       } else {
         setError(result.error);
+        setLimitHit(result.code === "limit");
       }
     });
   };
@@ -131,7 +136,20 @@ export function SaveToKitchenButton({
           </button>
         </div>
         {error && (
-          <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
+          <p className="text-xs text-red-600 dark:text-red-400">
+            {error}
+            {limitHit && (
+              <>
+                {" "}
+                <Link
+                  href="/pricing"
+                  className="font-semibold text-orange-600 underline underline-offset-2 hover:text-orange-700"
+                >
+                  See Premium
+                </Link>
+              </>
+            )}
+          </p>
         )}
       </div>
     );

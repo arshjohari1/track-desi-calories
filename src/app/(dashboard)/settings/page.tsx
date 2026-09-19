@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { fetchSubscription } from "~/lib/billing/subscription";
 import { createClient } from "~/lib/supabase/server";
 import { DEFAULT_UNITS, isValidUnits, UNITS_COOKIE } from "~/lib/units";
 import type { ProfileValues } from "./profile-form";
@@ -28,6 +29,8 @@ export default async function SettingsPage() {
     redirect("/onboarding");
   }
 
+  const subscription = await fetchSubscription(supabase, user.id);
+
   const values: ProfileValues = {
     goal: profile.goal,
     sex: profile.sex,
@@ -54,6 +57,12 @@ export default async function SettingsPage() {
       defaultUnits={defaultUnits}
       fullName={fullName}
       email={email}
+      billing={{
+        isPremium: subscription.isPremium,
+        plan: subscription.plan,
+        status: subscription.status,
+        currentPeriodEnd: subscription.currentPeriodEnd,
+      }}
     />
   );
 }

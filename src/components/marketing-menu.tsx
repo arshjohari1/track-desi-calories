@@ -149,6 +149,15 @@ export function MarketingMenu({
                   </>
                 )}
 
+                <Link
+                  href="/pricing"
+                  onClick={() => setOpen(false)}
+                  className={itemClass}
+                >
+                  Pricing
+                </Link>
+                <span className="my-2 border-t border-border" />
+
                 {isSignedIn ? (
                   <>
                     <Link

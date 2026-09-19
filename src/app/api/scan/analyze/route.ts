@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { describeAiError } from "~/lib/ai/errors";
 import { analyzeFoodImage } from "~/lib/ai/food";
 import { analyzeRequestSchema } from "~/lib/ai/scan-request";
+import { gateScan, recordScan, refundScan } from "~/lib/billing/scan-metering";
 import { createClient } from "~/lib/supabase/server";
+import { getUserTimeZone } from "~/lib/timezone";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -32,10 +34,32 @@ export async function POST(req: Request) {
     );
   }
 
+  // Meter the free tier before the expensive AI call. A photo scan is metered
+  // here at analyze — the estimate follow-up in this same scan is never counted
+  // again.
+  const timeZone = await getUserTimeZone();
+  const gate = await gateScan(supabase, user.id, timeZone);
+  if (!gate.allowed) {
+    return NextResponse.json(
+      {
+        error: `You've used your ${gate.limit} free scans for today. They reset at midnight — or go Premium for unlimited scans.`,
+        code: "scan_limit",
+        used: gate.usedToday,
+        limit: gate.limit,
+      },
+      { status: 402 },
+    );
+  }
+
+  // Record the scan now (analyze-start) so two requests can't both slip past the
+  // check; refunded below if the AI call itself fails.
+  const eventId = await recordScan(supabase, user.id, "meal");
+
   try {
     const analysis = await analyzeFoodImage(parsed.data.image);
     return NextResponse.json({ analysis });
   } catch (err) {
+    if (eventId) await refundScan(eventId);
     console.error("[scan/analyze]", err);
     const { status, message, reason } = describeAiError(err);
     console.error("[scan/analyze] reason:", reason);
