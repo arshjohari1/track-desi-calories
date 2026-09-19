@@ -16,6 +16,11 @@
 /** What the user sees for any AI failure. */
 const USER_MESSAGE = "Something went wrong. Please try again!";
 
+// Rate limiting is the one case where a specific message helps the user and
+// leaks nothing about our setup — and it's what users hit under per-tier limits.
+const RATE_LIMIT_MESSAGE =
+  "You're scanning a bit too fast — give it a moment and try again.";
+
 export function describeAiError(err: unknown): {
   status: number;
   message: string;
@@ -42,7 +47,7 @@ export function describeAiError(err: unknown): {
   if (statusCode === 429 || type === "rate_limit_exceeded") {
     return {
       status: 429,
-      message: USER_MESSAGE,
+      message: RATE_LIMIT_MESSAGE,
       reason:
         "AI Gateway rate limit (429). The free tier is throttling this model — wait, or add AI Gateway credits in Vercel.",
     };
