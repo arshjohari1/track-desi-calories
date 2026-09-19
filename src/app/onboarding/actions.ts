@@ -30,11 +30,17 @@ const onboardingSchema = z.object({
     "active",
     "very_active",
   ]),
+  fullName: z
+    .string()
+    .trim()
+    .min(1, "Please enter your name.")
+    .max(80, "That name is too long."),
 });
 
 // Fields required before we even attempt range validation, so an empty form
 // gets a clear "fill everything in" message rather than a misleading range one.
 const REQUIRED_FIELDS = [
+  "fullName",
   "goal",
   "sex",
   "age",
@@ -77,7 +83,8 @@ export async function completeOnboarding(
     };
   }
 
-  const { goal, sex, age, heightCm, weightKg, activityLevel } = parsed.data;
+  const { goal, sex, age, heightCm, weightKg, activityLevel, fullName } =
+    parsed.data;
 
   const dailyCalorieTarget = calculateDailyCalorieTarget({
     goal,
@@ -87,6 +94,17 @@ export async function completeOnboarding(
     weightKg,
     activityLevel,
   });
+
+  // Display name → Auth user_metadata (source of truth for the dashboard
+  // greeting and the Account settings name).
+  const { error: nameError } = await supabase.auth.updateUser({
+    data: { full_name: fullName },
+  });
+  if (nameError) {
+    return {
+      error: "Something went wrong saving your profile. Please try again.",
+    };
+  }
 
   const { error } = await supabase.from("profiles").upsert({
     id: user.id,

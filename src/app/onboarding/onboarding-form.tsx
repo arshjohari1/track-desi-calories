@@ -12,10 +12,9 @@ import {
   SEXES,
   type Sex,
 } from "~/lib/onboarding";
+import { rememberUnits, type Units } from "~/lib/units";
 import { cn } from "~/lib/utils";
 import { completeOnboarding, type OnboardingState } from "./actions";
-
-type Units = "metric" | "imperial";
 
 export function OnboardingForm() {
   const [state, formAction, isPending] = useActionState<
@@ -23,6 +22,7 @@ export function OnboardingForm() {
     FormData
   >(completeOnboarding, {});
 
+  const [fullName, setFullName] = useState("");
   const [goal, setGoal] = useState<Goal | "">("");
   const [sex, setSex] = useState<Sex | "">("");
   const [age, setAge] = useState("");
@@ -93,6 +93,7 @@ export function OnboardingForm() {
   // as pre-filled values).
   const showErrors = Boolean(state.error);
   const missing = {
+    name: fullName.trim() === "",
     goal: goal === "",
     sex: sex === "",
     age: age === "" || !Number.isFinite(ageNum),
@@ -104,6 +105,7 @@ export function OnboardingForm() {
   // Human-readable names of the still-missing fields, in form order — used to
   // name them in the banner so the user isn't hunting for an off-screen field.
   const missingLabels = [
+    missing.name && "name",
     missing.goal && "goal",
     missing.sex && "biological sex",
     missing.age && "age",
@@ -159,6 +161,29 @@ export function OnboardingForm() {
             : state.error}
         </p>
       )}
+
+      {/* Full name */}
+      <div
+        className="space-y-1.5"
+        data-invalid={showErrors && missing.name ? "true" : undefined}
+      >
+        <label htmlFor="onboarding-name" className="text-sm font-medium">
+          Full name
+        </label>
+        <input
+          id="onboarding-name"
+          name="fullName"
+          type="text"
+          value={fullName}
+          onChange={(e) => setFullName(e.target.value)}
+          placeholder="e.g. Priya Sharma"
+          maxLength={80}
+          className={field(showErrors && missing.name)}
+        />
+        {showErrors && missing.name && (
+          <p className="text-xs text-red-600">Please enter your name.</p>
+        )}
+      </div>
 
       {/* Goal */}
       <fieldset
@@ -260,7 +285,10 @@ export function OnboardingForm() {
             <button
               key={u}
               type="button"
-              onClick={() => setUnits(u)}
+              onClick={() => {
+                setUnits(u);
+                rememberUnits(u);
+              }}
               className={cn(
                 "rounded-md px-3 py-1 text-xs font-medium capitalize transition-colors",
                 units === u
@@ -287,6 +315,7 @@ export function OnboardingForm() {
                 type="number"
                 min={50}
                 max={275}
+                step="0.1"
                 inputMode="decimal"
                 value={heightCmInput}
                 onChange={(e) => setHeightCmInput(e.target.value)}
@@ -346,6 +375,7 @@ export function OnboardingForm() {
               type="number"
               min={units === "metric" ? 20 : 44}
               max={units === "metric" ? 500 : 1100}
+              step="0.1"
               inputMode="decimal"
               value={units === "metric" ? weightKgInput : weightLbInput}
               onChange={(e) =>

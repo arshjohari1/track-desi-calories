@@ -92,13 +92,14 @@ export const macrosSchema = z.object({
   servingSummary: z
     .string()
     .describe("Human-readable portion, e.g. '1 medium bowl (~250 g)'"),
-  calories: z.number().describe("Total kcal for the portion"),
-  protein: z.number().describe("Grams of protein for the portion"),
-  carbs: z.number().describe("Grams of carbohydrate for the portion"),
-  fat: z.number().describe("Grams of fat for the portion"),
-  fiber: z.number().describe("Grams of fiber for the portion"),
+  calories: z.number().min(0).describe("Total kcal for the portion"),
+  protein: z.number().min(0).describe("Grams of protein for the portion"),
+  carbs: z.number().min(0).describe("Grams of carbohydrate for the portion"),
+  fat: z.number().min(0).describe("Grams of fat for the portion"),
+  fiber: z.number().min(0).describe("Grams of fiber for the portion"),
   sugar: z
     .number()
+    .min(0)
     .describe(
       "Grams of sugar for the portion (a subset of carbs; the sweet component of desserts, chai, sweets, sauces)",
     ),

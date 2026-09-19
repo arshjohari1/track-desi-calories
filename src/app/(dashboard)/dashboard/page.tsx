@@ -100,6 +100,12 @@ export default async function DashboardPage({
   } = await supabase.auth.getUser();
 
   const userId = user?.id ?? "";
+  // Display name from Auth user_metadata; greet with just the first name.
+  const fullName =
+    typeof user?.user_metadata?.full_name === "string"
+      ? user.user_metadata.full_name
+      : "";
+  const firstName = fullName.trim().split(/\s+/)[0] ?? "";
 
   const [{ data: profile }, dayMeals, recentMeals, topDishes, savedDishCount] =
     await Promise.all([
@@ -144,6 +150,11 @@ export default async function DashboardPage({
 
   return (
     <div className="mx-auto max-w-7xl">
+      {firstName && (
+        <h1 className="mb-6 text-2xl font-bold tracking-tight sm:text-3xl">
+          Hey, {firstName}!
+        </h1>
+      )}
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_340px]">
         {/* Main column */}
         <div className="flex flex-col gap-6">
