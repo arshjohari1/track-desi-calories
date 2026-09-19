@@ -1,11 +1,24 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useState } from "react";
+import {
+  ManageBillingButton,
+  UpgradeButton,
+} from "~/components/billing/upgrade-button";
 import { ThemeToggle } from "~/components/theme-toggle";
+import { PLANS, type PlanId } from "~/lib/billing/constants";
 import type { Units } from "~/lib/units";
 import { cn } from "~/lib/utils";
 import { type AccountState, updateFullName } from "./actions";
 import { ProfileForm, type ProfileValues } from "./profile-form";
+
+export type BillingInfo = {
+  isPremium: boolean;
+  plan: PlanId | null;
+  status: string | null;
+  currentPeriodEnd: string | null;
+};
 
 const tabs = [
   { key: "account", label: "Account", icon: "👤" },
@@ -115,16 +128,97 @@ function AccountTab({ fullName, email }: { fullName: string; email: string }) {
   );
 }
 
+function BillingTab({ billing }: { billing: BillingInfo }) {
+  const periodEnd = billing.currentPeriodEnd
+    ? new Date(billing.currentPeriodEnd).toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    : null;
+  const canceling = billing.status === "canceled";
+  const planLabel = billing.plan
+    ? billing.plan === "annual"
+      ? "Annual"
+      : "Monthly"
+    : null;
+
+  return (
+    <section className="rounded-xl border border-border bg-card p-6">
+      <h2 className="mb-1 text-lg font-semibold">Plan &amp; billing</h2>
+      <p className="mb-6 text-sm text-muted-foreground">
+        {billing.isPremium
+          ? "You're on Premium — thanks for supporting the app."
+          : "You're on the free plan."}
+      </p>
+
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between rounded-lg border border-border bg-muted/30 px-4 py-3">
+          <div>
+            <p className="font-semibold">
+              {billing.isPremium ? "Premium" : "Free"}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {billing.isPremium
+                ? `${planLabel ? `${planLabel} · ` : ""}${
+                    canceling && periodEnd
+                      ? `access until ${periodEnd}`
+                      : periodEnd
+                        ? `renews ${periodEnd}`
+                        : "active"
+                  }`
+                : `${PLANS.annual.priceLabel}/yr or ${PLANS.monthly.priceLabel}/mo for unlimited scans, full history, trends & export`}
+            </p>
+          </div>
+          <span
+            className={cn(
+              "rounded-full px-2.5 py-0.5 text-xs font-semibold",
+              billing.isPremium
+                ? "bg-orange-600/10 text-orange-700 dark:text-orange-400"
+                : "bg-muted text-muted-foreground",
+            )}
+          >
+            {billing.isPremium ? "Premium" : "Free"}
+          </span>
+        </div>
+
+        {billing.isPremium ? (
+          <ManageBillingButton className="self-start rounded-lg border border-border px-5 py-2 text-sm font-medium transition-colors hover:bg-muted disabled:opacity-60">
+            Manage billing
+          </ManageBillingButton>
+        ) : (
+          <div className="flex flex-wrap items-center gap-3">
+            <UpgradeButton
+              plan="annual"
+              className="rounded-lg bg-orange-600 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-700 disabled:opacity-60"
+            >
+              Go Premium — {PLANS.annual.priceLabel}/yr
+            </UpgradeButton>
+            <Link
+              href="/pricing"
+              className="text-sm font-medium text-muted-foreground underline underline-offset-2 transition-colors hover:text-foreground"
+            >
+              Compare plans
+            </Link>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 export function SettingsClient({
   profile,
   defaultUnits,
   fullName,
   email,
+  billing,
 }: {
   profile: ProfileValues;
   defaultUnits: Units;
   fullName: string;
   email: string;
+  billing: BillingInfo;
 }) {
   const [activeTab, setActiveTab] = useState<Tab>("account");
 
@@ -166,19 +260,7 @@ export function SettingsClient({
           {activeTab === "profile" && (
             <ProfileForm profile={profile} defaultUnits={defaultUnits} />
           )}
-          {activeTab !== "account" && activeTab !== "profile" && (
-            <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-border bg-card py-24 text-center">
-              <span className="text-4xl">
-                {tabs.find((t) => t.key === activeTab)?.icon}
-              </span>
-              <h2 className="text-lg font-semibold">
-                {tabs.find((t) => t.key === activeTab)?.label}
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                This section is coming soon.
-              </p>
-            </div>
-          )}
+          {activeTab === "billing" && <BillingTab billing={billing} />}
         </div>
       </div>
     </div>

@@ -13,7 +13,13 @@ import { NAV_ITEMS } from "./nav-items";
  *
  * Hidden below `lg`, where DashboardMobileNav takes over with the same items.
  */
-export function DashboardSidebar({ isAdmin = false }: { isAdmin?: boolean }) {
+export function DashboardSidebar({
+  isAdmin = false,
+  isPremium = false,
+}: {
+  isAdmin?: boolean;
+  isPremium?: boolean;
+}) {
   const pathname = usePathname();
 
   return (
@@ -79,6 +85,22 @@ export function DashboardSidebar({ isAdmin = false }: { isAdmin?: boolean }) {
           </>
         )}
       </nav>
+
+      {!isPremium && (
+        <div className="px-3 pb-1">
+          <Link
+            href="/pricing"
+            className="block rounded-lg border border-orange-600/30 bg-orange-600/5 p-3 transition-colors hover:bg-orange-600/10"
+          >
+            <p className="text-sm font-semibold text-orange-700 dark:text-orange-400">
+              Go Premium
+            </p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Unlimited scans, full history, trends &amp; export.
+            </p>
+          </Link>
+        </div>
+      )}
 
       <div className="border-t border-border p-4">
         <p className="text-xs text-muted-foreground">

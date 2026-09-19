@@ -2,6 +2,9 @@ import { redirect } from "next/navigation";
 import { DashboardSidebar } from "~/components/dashboard/sidebar";
 import { TimezoneSync } from "~/components/dashboard/timezone-sync";
 import { DashboardTopbar } from "~/components/dashboard/topbar";
+import { FREE_HISTORY_DAYS } from "~/lib/billing/constants";
+import { fetchSubscription } from "~/lib/billing/subscription";
+import { startOfDay } from "~/lib/date";
 import { fetchMealDaySummaries } from "~/lib/meals";
 import { createClient } from "~/lib/supabase/server";
 import { getUserTimeZone } from "~/lib/timezone";
@@ -32,8 +35,20 @@ export default async function DashboardLayout({
     redirect("/onboarding");
   }
 
+  // Read premium separately (fails safe to free) so onboarding detection never
+  // depends on the billing columns existing.
+  const { isPremium } = await fetchSubscription(supabase, user.id);
   const timeZone = await getUserTimeZone();
-  const days = await fetchMealDaySummaries(supabase, user.id, timeZone);
+  // Free users' day-picker only reaches back the recent window; premium is full.
+  const since = isPremium
+    ? undefined
+    : startOfDay(
+        timeZone,
+        new Date(Date.now() - FREE_HISTORY_DAYS * 24 * 60 * 60 * 1000),
+      );
+  const days = await fetchMealDaySummaries(supabase, user.id, timeZone, {
+    since,
+  });
 
   return (
     // The light shell is a faint grey wash so white cards lift off it. In dark
@@ -42,7 +57,10 @@ export default async function DashboardLayout({
     // surface.
     <div className="flex min-h-screen bg-muted/30 dark:bg-background">
       <TimezoneSync serverTimeZone={timeZone} />
-      <DashboardSidebar isAdmin={user.app_metadata?.role === "admin"} />
+      <DashboardSidebar
+        isAdmin={user.app_metadata?.role === "admin"}
+        isPremium={isPremium}
+      />
       <div className="flex min-w-0 flex-1 flex-col">
         <DashboardTopbar
           email={user.email ?? ""}

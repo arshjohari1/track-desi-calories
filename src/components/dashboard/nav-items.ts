@@ -4,6 +4,7 @@ import {
   LogsIcon,
   ScanIcon,
   SettingsIcon,
+  TrendsIcon,
 } from "./icons";
 
 /**
@@ -18,5 +19,6 @@ export const NAV_ITEMS = [
   { label: "Scan Meal", href: "/scan", icon: ScanIcon },
   { label: "Kitchen", href: "/kitchen", icon: KitchenIcon },
   { label: "Logs", href: "/logs", icon: LogsIcon },
+  { label: "Trends", href: "/trends", icon: TrendsIcon },
   { label: "Settings", href: "/settings", icon: SettingsIcon },
 ] as const;

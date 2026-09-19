@@ -78,6 +78,22 @@ export function dataUrlToThumbnail(
   return resizeDataUrl(dataUrl, maxDim, quality);
 }
 
+/**
+ * An error from a scan API call. Carries the response `status` and the optional
+ * machine-readable `code` (e.g. "scan_limit") so callers can branch — showing an
+ * upgrade prompt for a hit daily limit versus a generic failure.
+ */
+export class ScanRequestError extends Error {
+  code?: string;
+  status: number;
+  constructor(message: string, status: number, code?: string) {
+    super(message);
+    this.name = "ScanRequestError";
+    this.status = status;
+    this.code = code;
+  }
+}
+
 export async function postJson<T>(url: string, body: unknown): Promise<T> {
   const res = await fetch(url, {
     method: "POST",
@@ -86,9 +102,14 @@ export async function postJson<T>(url: string, body: unknown): Promise<T> {
   });
   const data = (await res.json().catch(() => ({}))) as Partial<T> & {
     error?: string;
+    code?: string;
   };
   if (!res.ok) {
-    throw new Error(data.error ?? "Something went wrong. Please try again.");
+    throw new ScanRequestError(
+      data.error ?? "Something went wrong. Please try again.",
+      res.status,
+      data.code,
+    );
   }
   return data as T;
 }

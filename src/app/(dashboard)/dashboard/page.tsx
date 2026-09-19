@@ -7,6 +7,9 @@ import {
   UploadIcon,
 } from "~/components/dashboard/icons";
 import { MealRow } from "~/components/dashboard/meal-row";
+import { FREE_DAILY_SCANS } from "~/lib/billing/constants";
+import { countScansToday } from "~/lib/billing/scan-metering";
+import { fetchSubscription } from "~/lib/billing/subscription";
 import {
   endOfDay,
   formatDayLabel,
@@ -85,9 +88,9 @@ function EmptyState({
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ date?: string }>;
+  searchParams: Promise<{ date?: string; upgraded?: string }>;
 }) {
-  const { date } = await searchParams;
+  const { date, upgraded } = await searchParams;
   const timeZone = await getUserTimeZone();
   const selectedDay = parseDateParam(date, timeZone) ?? startOfDay(timeZone);
   const dayEnd = endOfDay(timeZone, selectedDay);
@@ -107,20 +110,31 @@ export default async function DashboardPage({
       : "";
   const firstName = fullName.trim().split(/\s+/)[0] ?? "";
 
-  const [{ data: profile }, dayMeals, recentMeals, topDishes, savedDishCount] =
-    await Promise.all([
-      supabase
-        .from("profiles")
-        .select("daily_calorie_target, goal")
-        .eq("id", userId)
-        .maybeSingle(),
-      fetchMeals(supabase, userId, { since: selectedDay, until: dayEnd }),
-      fetchMeals(supabase, userId, { limit: 5 }),
-      // The rail is the point of the Kitchen: repeat logging happens here, not
-      // on a page the user has to navigate to.
-      fetchKitchenDishes(supabase, userId, { limit: 3 }),
-      fetchKitchenDishCount(supabase, userId),
-    ]);
+  const [
+    { data: profile },
+    dayMeals,
+    recentMeals,
+    topDishes,
+    savedDishCount,
+    subscription,
+    scansUsedToday,
+  ] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("daily_calorie_target, goal")
+      .eq("id", userId)
+      .maybeSingle(),
+    fetchMeals(supabase, userId, { since: selectedDay, until: dayEnd }),
+    fetchMeals(supabase, userId, { limit: 5 }),
+    // The rail is the point of the Kitchen: repeat logging happens here, not
+    // on a page the user has to navigate to.
+    fetchKitchenDishes(supabase, userId, { limit: 3 }),
+    fetchKitchenDishCount(supabase, userId),
+    fetchSubscription(supabase, userId),
+    countScansToday(supabase, userId, timeZone),
+  ]);
+
+  const scansLeft = Math.max(0, FREE_DAILY_SCANS - scansUsedToday);
 
   const target: number | null = profile?.daily_calorie_target ?? null;
   const consumed = Math.round(sumCalories(dayMeals));
@@ -155,6 +169,32 @@ export default async function DashboardPage({
           Hey, {firstName}!
         </h1>
       )}
+
+      {upgraded === "1" && (
+        <div className="mb-6 rounded-lg border border-green-600/30 bg-green-600/5 px-4 py-3 text-sm font-medium text-green-700 dark:text-green-400">
+          🎉 Thanks for upgrading! Your Premium features are unlocking now — if
+          anything still looks locked, refresh in a moment.
+        </div>
+      )}
+
+      {/* Free-tier meter: reinforces the daily allowance and offers the upgrade
+          path. Hidden for premium, who have no daily cap. */}
+      {!subscription.isPremium && (
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-card px-4 py-2.5 shadow-sm">
+          <p className="text-sm text-muted-foreground">
+            <span className="font-semibold text-foreground">{scansLeft}</span>{" "}
+            of {FREE_DAILY_SCANS} free AI scans left today
+            {scansLeft === 0 && " · resets at midnight"}
+          </p>
+          <Link
+            href="/pricing"
+            className="text-sm font-semibold text-orange-600 transition-colors hover:text-orange-700"
+          >
+            Go Premium →
+          </Link>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_340px]">
         {/* Main column */}
         <div className="flex flex-col gap-6">
@@ -191,7 +231,7 @@ export default async function DashboardPage({
                   Upload Photo
                 </Link>
                 <Link
-                  href="/scan?mode=label"
+                  href="/scan?mode=manual"
                   className="flex h-11 items-center justify-center gap-2 rounded-lg border border-border px-3 text-sm font-medium transition-colors hover:bg-muted sm:h-10 sm:px-4"
                 >
                   <PlusIcon className="size-4 shrink-0" />

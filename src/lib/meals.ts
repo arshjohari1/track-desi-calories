@@ -168,16 +168,21 @@ export async function fetchMealDaySummaries(
   supabase: SupabaseClient,
   userId: string,
   timeZone: string,
-  opts: { limit?: number } = {},
+  opts: { limit?: number; since?: Date } = {},
 ): Promise<MealDaySummary[]> {
   if (!userId) return [];
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("meals")
     .select("eaten_at, calories")
     .eq("user_id", userId)
     .order("eaten_at", { ascending: false })
     .limit(opts.limit ?? 500);
+
+  // Free users only see recent days in the picker; premium passes no bound.
+  if (opts.since) query = query.gte("eaten_at", opts.since.toISOString());
+
+  const { data, error } = await query;
 
   if (error || !data) return [];
 
