@@ -164,11 +164,32 @@ export default async function DashboardPage({
 
   return (
     <div className="mx-auto max-w-7xl">
-      {firstName && (
-        <h1 className="mb-6 text-2xl font-bold tracking-tight sm:text-3xl">
-          Hey, {firstName}!
-        </h1>
-      )}
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        {firstName ? (
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+            Hey, {firstName}!
+          </h1>
+        ) : (
+          <span />
+        )}
+        {/* Plan indicator — always visible so users know which tier they're on. */}
+        <span
+          className={cn(
+            "inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold",
+            subscription.isPremium
+              ? "bg-orange-600/10 text-orange-700 dark:text-orange-400"
+              : "border border-border text-muted-foreground",
+          )}
+        >
+          <span
+            className={cn(
+              "size-1.5 rounded-full",
+              subscription.isPremium ? "bg-orange-600" : "bg-muted-foreground",
+            )}
+          />
+          {subscription.isPremium ? "Premium plan" : "Free plan"}
+        </span>
+      </div>
 
       {upgraded === "1" && (
         <div className="mb-6 rounded-lg border border-green-600/30 bg-green-600/5 px-4 py-3 text-sm font-medium text-green-700 dark:text-green-400">
