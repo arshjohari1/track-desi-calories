@@ -268,3 +268,95 @@ test("signup handles both immediate sessions and email confirmation", async () =
     );
   }
 });
+
+test("Trends dates stay consecutive through California daylight-saving changes", () => {
+  const { recentDateParams, parseDateParam, endOfDay, startOfDay } =
+    loadSource("src/lib/date.ts");
+  const zone = "America/Los_Angeles";
+  const fall = recentDateParams(zone, 30, new Date("2026-11-02T07:30:00Z"));
+  assert.equal(fall.length, 30);
+  assert.equal(new Set(fall).size, 30);
+  assert.equal(fall[0], "2026-10-03");
+  assert.equal(fall.at(-1), "2026-11-01");
+  const spring = recentDateParams(zone, 3, new Date("2027-03-15T07:30:00Z"));
+  assert.equal(spring.join(","), "2027-03-13,2027-03-14,2027-03-15");
+  const transition = parseDateParam("2026-11-01", zone);
+  assert.equal(
+    (endOfDay(zone, transition) - startOfDay(zone, transition)) / 3_600_000,
+    25,
+  );
+  assert.equal(parseDateParam("2026-02-30", zone), null);
+});
+
+test("label scaling handles grams, fractional portions, and unknown pack sizes", () => {
+  const { computeFactor, scaleMacros, deriveWholePack } =
+    loadSource("src/lib/label.ts");
+  const factor = computeFactor({
+    mode: "grams",
+    grams: 75,
+    servings: 1,
+    servingSizeGrams: 50,
+  });
+  assert.equal(factor, 1.5);
+  const result = scaleMacros(
+    { calories: 200, protein: 8, carbs: 30, fat: 6, fiber: 4, sugar: 5 },
+    factor,
+  );
+  assert.equal(result.calories, 300);
+  assert.equal(result.protein, 12);
+  assert.equal(scaleMacros({ calories: 200 }, Number.NaN).calories, 0);
+  assert.equal(
+    deriveWholePack({
+      servingsPerContainer: null,
+      netWeightGrams: null,
+      servingSizeGrams: 50,
+    }),
+    null,
+  );
+});
+
+test("CSV export escapes commas, quotes, newlines, and formula-like meal names", async () => {
+  const names = [
+    "Dal, rice",
+    'Paneer "special"',
+    "Two\nlines",
+    '=HYPERLINK("https://example.com")',
+    "  +1+1",
+    "@SUM(1)",
+    "-1+1",
+  ];
+  const route = loadSource("src/app/api/export/meals/route.ts", {
+    "~/lib/supabase/server": {
+      createClient: async () => ({
+        auth: { getUser: async () => ({ data: { user: { id: "test" } } }) },
+      }),
+    },
+    "~/lib/billing/subscription": {
+      fetchSubscription: async () => ({ isPremium: true }),
+    },
+    "~/lib/timezone": { getUserTimeZone: async () => "America/Los_Angeles" },
+    "~/lib/meals": {
+      fetchMeals: async () =>
+        names.map((name) => ({
+          eatenAt: "2026-10-26T12:00:00Z",
+          dishName: name,
+          calories: 200,
+          protein: 8,
+          carbs: 30,
+          fat: 6,
+          fiber: 4,
+          sugar: 5,
+        })),
+    },
+  });
+  const response = await route.GET();
+  assert.equal(response.status, 200);
+  const csv = await response.text();
+  assert.ok(csv.includes('"Dal, rice"'));
+  assert.ok(csv.includes('"Paneer ""special"""'));
+  assert.ok(csv.includes('"Two\nlines"'));
+  assert.ok(csv.includes(`"'=HYPERLINK(""https://example.com"")"`));
+  for (const value of ["'  +1+1", "'@SUM(1)", "'-1+1"])
+    assert.ok(csv.includes(value));
+  assert.equal(response.headers.get("cache-control"), "no-store");
+});

@@ -5,12 +5,16 @@ import {
   TrendsIcon,
 } from "~/components/dashboard/icons";
 import { fetchSubscription } from "~/lib/billing/subscription";
-import { startOfDay, toDateParam } from "~/lib/date";
+import {
+  parseDateParam,
+  recentDateParams,
+  startOfDay,
+  toDateParam,
+} from "~/lib/date";
 import { fetchMeals, type Meal } from "~/lib/meals";
 import { createClient } from "~/lib/supabase/server";
 import { getUserTimeZone } from "~/lib/timezone";
 
-const DAY_MS = 24 * 60 * 60 * 1000;
 const WINDOW_DAYS = 30;
 
 type DayPoint = { key: string; calories: number };
@@ -75,11 +79,8 @@ export default async function TrendsPage() {
   }
 
   const timeZone = await getUserTimeZone();
-  const now = Date.now();
-  const since = startOfDay(
-    timeZone,
-    new Date(now - (WINDOW_DAYS - 1) * DAY_MS),
-  );
+  const dayKeys = recentDateParams(timeZone, WINDOW_DAYS);
+  const since = parseDateParam(dayKeys[0], timeZone) ?? startOfDay(timeZone);
   const meals = await fetchMeals(supabase, userId, { since, limit: 2000 });
 
   // Aggregate per calendar day in the user's timezone.
@@ -115,11 +116,10 @@ export default async function TrendsPage() {
   }
 
   // Ordered oldest → newest across the whole window, so gaps show as empty bars.
-  const series: DayPoint[] = [];
-  for (let i = WINDOW_DAYS - 1; i >= 0; i--) {
-    const key = toDateParam(new Date(now - i * DAY_MS), timeZone);
-    series.push({ key, calories: Math.round(byDay.get(key)?.calories ?? 0) });
-  }
+  const series: DayPoint[] = dayKeys.map((key) => ({
+    key,
+    calories: Math.round(byDay.get(key)?.calories ?? 0),
+  }));
 
   const loggedDays = [...byDay.values()];
   const daysLogged = loggedDays.length;

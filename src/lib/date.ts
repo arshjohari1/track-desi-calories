@@ -105,6 +105,23 @@ export function toDateParam(date: Date, timeZone: string): string {
   return `${year}-${pad(month)}-${pad(day)}`;
 }
 
+/** Calendar dates, oldest first, without skipping/repeating days across DST. */
+export function recentDateParams(
+  timeZone: string,
+  count: number,
+  date: Date = new Date(),
+): string[] {
+  const { year, month, day } = dayPartsInTz(date, timeZone);
+  // Use UTC only as a calendar calculator. These are date keys, not instants
+  // representing midnight in the user's zone (whose days may be 23/25 hours).
+  const calendarDay = Date.UTC(year, month - 1, day);
+  return Array.from({ length: count }, (_, index) =>
+    new Date(calendarDay - (count - 1 - index) * 86_400_000)
+      .toISOString()
+      .slice(0, 10),
+  );
+}
+
 /** Midnight (in `timeZone`) starting the day `date` falls on, or today by default. */
 export function startOfDay(timeZone: string, date: Date = new Date()): Date {
   return zonedMidnight(dayPartsInTz(date, timeZone), timeZone);

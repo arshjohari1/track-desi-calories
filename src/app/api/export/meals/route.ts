@@ -7,9 +7,11 @@ import { getUserTimeZone } from "~/lib/timezone";
 
 export const runtime = "nodejs";
 
-/** Quote a CSV cell only when it contains a comma, quote, or newline. */
+/** Escape CSV syntax and keep user-entered text from becoming a spreadsheet formula. */
 function csvCell(value: string | number): string {
-  const s = String(value);
+  const raw = String(value);
+  const s =
+    typeof value === "string" && /^\s*[=+@-]/.test(raw) ? `'${raw}` : raw;
   return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
