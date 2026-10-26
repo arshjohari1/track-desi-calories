@@ -17,6 +17,7 @@ function loadSource(relativePath, overrides = {}, globals = {}) {
     compilerOptions: {
       module: ts.ModuleKind.CommonJS,
       target: ts.ScriptTarget.ES2022,
+      jsx: ts.JsxEmit.ReactJSX,
     },
   }).outputText;
   const module = { exports: {} };
@@ -359,4 +360,46 @@ test("CSV export escapes commas, quotes, newlines, and formula-like meal names",
   for (const value of ["'  +1+1", "'@SUM(1)", "'-1+1"])
     assert.ok(csv.includes(value));
   assert.equal(response.headers.get("cache-control"), "no-store");
+});
+
+test("private pages redirect an expired session before rendering data or a paywall", async () => {
+  const overrides = {
+    "~/env": { env: { CHALLENGE_EDITION: "true" } },
+    "next/navigation": {
+      redirect(location) {
+        throw new Error(location);
+      },
+    },
+    "~/lib/supabase/server": {
+      createClient: async () => ({
+        auth: { getUser: async () => ({ data: { user: null } }) },
+        from() {
+          throw new Error("Must not query user data after session expiry");
+        },
+      }),
+    },
+    "~/lib/timezone": { getUserTimeZone: async () => "America/Los_Angeles" },
+  };
+  for (const component of [
+    "~/app/(dashboard)/kitchen/log-dish-button",
+    "~/components/dashboard/icons",
+    "~/components/dashboard/meal-row",
+    "~/components/dashboard/save-to-kitchen-button",
+    "./delete-meal-button",
+    "./kitchen-dish-card",
+    "./label-flow",
+    "./manual-flow",
+    "./scan-flow",
+  ])
+    overrides[component] = {};
+  for (const page of ["dashboard", "trends", "logs", "kitchen", "scan"]) {
+    const { default: render } = loadSource(
+      `src/app/(dashboard)/${page}/page.tsx`,
+      overrides,
+    );
+    await assert.rejects(
+      render({ searchParams: Promise.resolve({}) }),
+      (error) => error.message === "/login",
+    );
+  }
 });

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { LogDishButton } from "~/app/(dashboard)/kitchen/log-dish-button";
 import {
   KitchenIcon,
@@ -102,7 +103,8 @@ export default async function DashboardPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const userId = user?.id ?? "";
+  if (!user) redirect("/login");
+  const userId = user.id;
   // Display name from Auth user_metadata; greet with just the first name.
   const fullName =
     typeof user?.user_metadata?.full_name === "string"

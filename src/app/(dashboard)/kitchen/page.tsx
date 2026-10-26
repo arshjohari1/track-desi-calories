@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { KitchenIcon, UploadIcon } from "~/components/dashboard/icons";
 import { fetchKitchenDishes } from "~/lib/kitchen";
 import { createClient } from "~/lib/supabase/server";
@@ -9,8 +10,9 @@ export default async function KitchenPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
-  const dishes = await fetchKitchenDishes(supabase, user?.id ?? "");
+  const dishes = await fetchKitchenDishes(supabase, user.id);
 
   if (dishes.length === 0) {
     return (

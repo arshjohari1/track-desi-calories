@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { LogsIcon, UploadIcon } from "~/components/dashboard/icons";
 import { MealRow } from "~/components/dashboard/meal-row";
 import { SaveToKitchenButton } from "~/components/dashboard/save-to-kitchen-button";
@@ -34,10 +35,11 @@ export default async function LogsPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
   const limit = parseLimit((await searchParams).limit);
   const timeZone = await getUserTimeZone();
-  const subscription = await fetchSubscription(supabase, user?.id ?? "");
+  const subscription = await fetchSubscription(supabase, user.id);
 
   // Free users see a rolling recent window; premium sees the full history.
   const since = subscription.isPremium
@@ -47,7 +49,7 @@ export default async function LogsPage({
         new Date(Date.now() - FREE_HISTORY_DAYS * 24 * 60 * 60 * 1000),
       );
 
-  const meals = await fetchMeals(supabase, user?.id ?? "", { limit, since });
+  const meals = await fetchMeals(supabase, user.id, { limit, since });
   const days = groupMealsByDay(meals, timeZone);
   // A full page back means there are probably older meals still unfetched.
   const hasMore = meals.length >= limit && limit < MAX_LIMIT;

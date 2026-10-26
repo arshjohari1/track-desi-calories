@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import {
   DownloadIcon,
   LockIcon,
@@ -43,7 +44,8 @@ export default async function TrendsPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const userId = user?.id ?? "";
+  if (!user) redirect("/login");
+  const userId = user.id;
   const subscription = await fetchSubscription(supabase, userId);
 
   // Locked state for free users — the whole point of the upgrade.

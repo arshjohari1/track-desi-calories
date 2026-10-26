@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { LabelIcon, PlusIcon, ScanIcon } from "~/components/dashboard/icons";
+import { createClient } from "~/lib/supabase/server";
 import { cn } from "~/lib/utils";
 import { LabelFlow } from "./label-flow";
 import { ManualFlow } from "./manual-flow";
@@ -51,6 +53,11 @@ export default async function ScanPage({
 }: {
   searchParams: Promise<{ mode?: string }>;
 }) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
   const { mode } = await searchParams;
   const active: Mode =
     mode === "label" ? "label" : mode === "manual" ? "manual" : "photo";
