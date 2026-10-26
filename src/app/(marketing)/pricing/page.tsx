@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { UpgradeButton } from "~/components/billing/upgrade-button";
+import { ChallengeAccess } from "~/components/challenge-access";
 import { CheckIcon } from "~/components/dashboard/icons";
+import { env } from "~/env";
 import {
   FREE_DAILY_SCANS,
   FREE_HISTORY_DAYS,
@@ -13,9 +15,14 @@ import { createClient } from "~/lib/supabase/server";
 import { cn } from "~/lib/utils";
 
 export const metadata: Metadata = {
-  title: "Pricing · TrackDesiCalories",
+  title:
+    env.CHALLENGE_EDITION === "true"
+      ? "Challenge edition · TrackDesiCalories"
+      : "Pricing · TrackDesiCalories",
   description:
-    "Start free with 2 AI scans a day. Go Premium for unlimited scans, full history, trends and export — $10/mo or $70/yr.",
+    env.CHALLENGE_EDITION === "true"
+      ? "Explore every feature free during Congressional App Challenge judging. No payment required."
+      : "Start free with 2 AI scans a day. Go Premium for unlimited scans, full history, trends and export — $10/mo or $70/yr.",
 };
 
 type Row = { label: string; free: string; premium: string };
@@ -59,6 +66,14 @@ function Bullet({ children, on }: { children: React.ReactNode; on: boolean }) {
 }
 
 export default async function PricingPage() {
+  if (env.CHALLENGE_EDITION === "true") {
+    return (
+      <main>
+        <h1 className="sr-only">Challenge edition access</h1>
+        <ChallengeAccess />
+      </main>
+    );
+  }
   const supabase = await createClient();
   const {
     data: { user },

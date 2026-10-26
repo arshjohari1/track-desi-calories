@@ -52,6 +52,9 @@ export async function fileToCompressedDataUrl(
   maxDim = 1024,
   quality = 0.85,
 ): Promise<string> {
+  if (file.size > 25_000_000) {
+    throw new Error("That photo is too large. Choose an image under 25 MB.");
+  }
   const originalDataUrl = await new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result as string);
@@ -59,7 +62,20 @@ export async function fileToCompressedDataUrl(
     reader.readAsDataURL(file);
   });
 
-  return resizeDataUrl(originalDataUrl, maxDim, quality);
+  const compressed = await resizeDataUrl(originalDataUrl, maxDim, quality);
+  // Failed browser decoding must not send an original HEIC/large phone photo
+  // to a host that will reject it before our route can return a useful error.
+  if (!compressed.startsWith("data:image/jpeg;base64,")) {
+    throw new Error(
+      "This photo couldn't be converted. Try a JPEG, PNG, or WebP image instead.",
+    );
+  }
+  if (compressed.length > 3_500_000) {
+    throw new Error(
+      "That photo is still too large after compression. Try a smaller image.",
+    );
+  }
+  return compressed;
 }
 
 /**

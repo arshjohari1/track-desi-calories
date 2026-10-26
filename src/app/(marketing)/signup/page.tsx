@@ -28,7 +28,7 @@ export default async function SignupPage({
             Create an account
           </h1>
           <p className="text-sm text-muted-foreground">
-            Start tracking your desi meals today
+            Start tracking your desi meals today. For adults 18 and older.
           </p>
         </div>
 
@@ -64,6 +64,7 @@ export default async function SignupPage({
               type="password"
               required
               autoComplete="new-password"
+              minLength={6}
               placeholder="••••••••"
               className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-orange-500"
             />

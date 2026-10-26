@@ -121,8 +121,12 @@ export function ScanFlow() {
     let dataUrl: string;
     try {
       dataUrl = await fileToCompressedDataUrl(file);
-    } catch {
-      setError("Couldn't read that photo. Try a different one.");
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Couldn't read that photo. Try a different one.",
+      );
       return;
     }
     setImageUrl(dataUrl);

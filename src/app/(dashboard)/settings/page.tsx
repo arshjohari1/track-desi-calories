@@ -58,6 +58,7 @@ export default async function SettingsPage() {
       fullName={fullName}
       email={email}
       billing={{
+        isChallengeEdition: subscription.isChallengeEdition,
         isPremium: subscription.isPremium,
         plan: subscription.plan,
         status: subscription.status,

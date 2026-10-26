@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { env } from "~/env";
 import type { PlanId } from "./constants";
 
 /**
@@ -10,6 +11,7 @@ import type { PlanId } from "./constants";
  * is a trustworthy source for gating.
  */
 export type Subscription = {
+  isChallengeEdition: boolean;
   isPremium: boolean;
   status: string | null;
   plan: PlanId | null;
@@ -18,6 +20,7 @@ export type Subscription = {
 };
 
 const FREE: Subscription = {
+  isChallengeEdition: false,
   isPremium: false,
   status: null,
   plan: null,
@@ -34,6 +37,10 @@ export async function fetchSubscription(
   userId: string,
 ): Promise<Subscription> {
   if (!userId) return FREE;
+  // Access entitlement only: no Stripe subscription is created or modified.
+  if (env.CHALLENGE_EDITION === "true") {
+    return { ...FREE, isPremium: true, isChallengeEdition: true };
+  }
 
   const { data, error } = await supabase
     .from("profiles")
@@ -46,6 +53,7 @@ export async function fetchSubscription(
   if (error || !data) return FREE;
 
   return {
+    isChallengeEdition: false,
     isPremium: Boolean(data.is_premium),
     status: data.subscription_status ?? null,
     plan: (data.plan as PlanId | null) ?? null,

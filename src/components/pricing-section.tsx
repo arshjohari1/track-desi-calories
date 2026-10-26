@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { ChallengeAccess } from "~/components/challenge-access";
 import { CheckIcon } from "~/components/dashboard/icons";
+import { env } from "~/env";
 import {
   FREE_DAILY_SCANS,
   FREE_HISTORY_DAYS,
@@ -23,6 +25,7 @@ function Feature({ children }: { children: React.ReactNode }) {
 }
 
 export function PricingSection() {
+  if (env.CHALLENGE_EDITION === "true") return <ChallengeAccess />;
   return (
     <section
       id="pricing"

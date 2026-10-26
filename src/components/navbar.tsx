@@ -4,6 +4,7 @@ import {
   MarketingMenu,
   MarketingSectionLinks,
 } from "~/components/marketing-menu";
+import { env } from "~/env";
 import { createClient } from "~/lib/supabase/server";
 
 export async function Navbar() {
@@ -38,7 +39,7 @@ export async function Navbar() {
             href="/pricing"
             className="text-sm text-muted-foreground decoration-orange-600 underline-offset-4 transition-colors hover:text-foreground hover:underline"
           >
-            Pricing
+            {env.CHALLENGE_EDITION === "true" ? "Free access" : "Pricing"}
           </Link>
         </div>
 
@@ -87,7 +88,11 @@ export async function Navbar() {
           )}
         </div>
 
-        <MarketingMenu isSignedIn={Boolean(user)} isAdmin={isAdmin} />
+        <MarketingMenu
+          isSignedIn={Boolean(user)}
+          isAdmin={isAdmin}
+          isChallengeEdition={env.CHALLENGE_EDITION === "true"}
+        />
       </div>
     </nav>
   );

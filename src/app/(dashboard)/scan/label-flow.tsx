@@ -157,8 +157,12 @@ export function LabelFlow() {
     try {
       // Labels need finer detail than plates so the small print stays legible.
       dataUrl = await fileToCompressedDataUrl(file, 1600, 0.9);
-    } catch {
-      setError("Couldn't read that photo. Try a different one.");
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Couldn't read that photo. Try a different one.",
+      );
       return;
     }
     setImageUrl(dataUrl);

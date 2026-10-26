@@ -4,7 +4,17 @@ import { createClient } from "~/lib/supabase/server";
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/dashboard";
+  const requestedNext = searchParams.get("next") ?? "/dashboard";
+  // Never turn the post-login destination into an external URL.
+  let next = "/dashboard";
+  try {
+    const destination = new URL(requestedNext, origin);
+    if (destination.origin === origin && requestedNext.startsWith("/")) {
+      next = `${destination.pathname}${destination.search}`;
+    }
+  } catch {
+    // Malformed redirect input must not prevent a valid sign-in.
+  }
 
   if (code) {
     const supabase = await createClient();

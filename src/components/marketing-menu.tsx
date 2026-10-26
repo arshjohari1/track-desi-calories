@@ -52,9 +52,11 @@ export function MarketingSectionLinks() {
 export function MarketingMenu({
   isSignedIn,
   isAdmin,
+  isChallengeEdition,
 }: {
   isSignedIn: boolean;
   isAdmin: boolean;
+  isChallengeEdition: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const panelId = useId();
@@ -154,7 +156,7 @@ export function MarketingMenu({
                   onClick={() => setOpen(false)}
                   className={itemClass}
                 >
-                  Pricing
+                  {isChallengeEdition ? "Free access" : "Pricing"}
                 </Link>
                 <span className="my-2 border-t border-border" />
 

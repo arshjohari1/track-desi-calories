@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
+import { env } from "~/env";
 import type { PlanId } from "~/lib/billing/constants";
 import { fetchSubscription } from "~/lib/billing/subscription";
 import { getStripe, priceIdForPlan } from "~/lib/stripe";
@@ -15,6 +16,16 @@ export const runtime = "nodejs";
  * "not_configured" code so the UI can show "launching soon" instead of failing.
  */
 export async function POST(req: Request) {
+  if (env.CHALLENGE_EDITION === "true") {
+    return NextResponse.json(
+      {
+        error:
+          "All features are free in the Challenge edition. No payment is needed.",
+        code: "challenge_edition",
+      },
+      { status: 403 },
+    );
+  }
   const supabase = await createClient();
   const {
     data: { user },

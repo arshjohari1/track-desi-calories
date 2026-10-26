@@ -104,7 +104,7 @@ export function DashboardSidebar({
 
       <div className="border-t border-border p-4">
         <p className="text-xs text-muted-foreground">
-          Accurate for South Asian home-cooked meals.
+          Nutrition estimates for South Asian home cooking.
         </p>
       </div>
     </aside>

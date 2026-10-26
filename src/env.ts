@@ -7,6 +7,9 @@ export const env = createEnv({
       .enum(["development", "test", "production"])
       .default("development"),
     AI_GATEWAY_API_KEY: z.string().min(1),
+    SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
+    // This submission ships with full access. Set false to restore paid plans.
+    CHALLENGE_EDITION: z.enum(["true", "false"]).default("true"),
     // Stripe billing. All optional so the app runs before billing is wired up —
     // the checkout/webhook routes report "not configured" until these are set.
     STRIPE_SECRET_KEY: z.string().optional(),
@@ -21,6 +24,8 @@ export const env = createEnv({
   runtimeEnv: {
     NODE_ENV: process.env.NODE_ENV,
     AI_GATEWAY_API_KEY: process.env.AI_GATEWAY_API_KEY,
+    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    CHALLENGE_EDITION: process.env.CHALLENGE_EDITION,
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
     STRIPE_PRICE_MONTHLY: process.env.STRIPE_PRICE_MONTHLY,

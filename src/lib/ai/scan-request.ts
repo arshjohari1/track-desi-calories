@@ -8,8 +8,8 @@ import { z } from "zod";
 
 const IMAGE_DATA_URL_RE = /^data:image\/(jpeg|jpg|png|webp|heic|heif);base64,/;
 
-// ~9 MB of decoded image once base64 overhead (~33%) is removed.
-const MAX_IMAGE_CHARS = 12_000_000;
+// Leave room for JSON fields below Vercel's 4.5 MB request-body ceiling.
+const MAX_IMAGE_CHARS = 3_500_000;
 
 const imageDataUrl = z
   .string()
@@ -30,15 +30,15 @@ export const labelRequestSchema = z.object({
 export const estimateRequestSchema = z.object({
   image: imageDataUrl,
   analysis: z.object({
-    dishName: z.string().min(1),
-    cuisine: z.string(),
+    dishName: z.string().min(1).max(200),
+    cuisine: z.string().max(120),
     isSouthAsian: z.boolean(),
   }),
   answers: z
     .array(
       z.object({
-        question: z.string(),
-        answer: z.string(),
+        question: z.string().max(1000),
+        answer: z.string().max(2000),
       }),
     )
     .max(12),

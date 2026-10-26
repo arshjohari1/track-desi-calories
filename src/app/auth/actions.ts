@@ -22,14 +22,17 @@ export async function signup(formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
 
-  const { error } = await supabase.auth.signUp({ email, password });
+  const { data, error } = await supabase.auth.signUp({ email, password });
 
   if (error) {
     redirect(`/signup?error=${encodeURIComponent(error.message)}`);
   }
 
-  // Email confirmation is disabled, so sign-up creates a session immediately.
-  // Send the user into the app; the dashboard gate routes them to onboarding.
+  if (!data.session) {
+    redirect(
+      `/login?message=${encodeURIComponent("Check your email to confirm your account, then sign in.")}`,
+    );
+  }
   redirect("/dashboard");
 }
 

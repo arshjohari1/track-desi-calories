@@ -14,6 +14,7 @@ import { type AccountState, updateFullName } from "./actions";
 import { ProfileForm, type ProfileValues } from "./profile-form";
 
 export type BillingInfo = {
+  isChallengeEdition: boolean;
   isPremium: boolean;
   plan: PlanId | null;
   status: string | null;
@@ -129,6 +130,21 @@ function AccountTab({ fullName, email }: { fullName: string; email: string }) {
 }
 
 function BillingTab({ billing }: { billing: BillingInfo }) {
+  if (billing.isChallengeEdition) {
+    return (
+      <section className="rounded-xl border border-border bg-card p-6">
+        <h2 className="text-lg font-semibold">Challenge edition</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          All features are free during Congressional App Challenge judging. No
+          subscription or payment details needed.
+        </p>
+        <p className="mt-4 text-sm">
+          Unlimited meal and label scans, saved Kitchen dishes, full meal
+          history, trends, and CSV export are included.
+        </p>
+      </section>
+    );
+  }
   const periodEnd = billing.currentPeriodEnd
     ? new Date(billing.currentPeriodEnd).toLocaleDateString(undefined, {
         year: "numeric",
@@ -247,7 +263,9 @@ export function SettingsClient({
               )}
             >
               <span className="text-base">{tab.icon}</span>
-              {tab.label}
+              {tab.key === "billing" && billing.isChallengeEdition
+                ? "App access"
+                : tab.label}
             </button>
           ))}
         </nav>

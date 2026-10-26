@@ -187,11 +187,15 @@ export default async function DashboardPage({
               subscription.isPremium ? "bg-orange-600" : "bg-muted-foreground",
             )}
           />
-          {subscription.isPremium ? "Premium plan" : "Free plan"}
+          {subscription.isChallengeEdition
+            ? "Challenge edition · Full access"
+            : subscription.isPremium
+              ? "Premium plan"
+              : "Free plan"}
         </span>
       </div>
 
-      {upgraded === "1" && (
+      {upgraded === "1" && !subscription.isChallengeEdition && (
         <div className="mb-6 rounded-lg border border-green-600/30 bg-green-600/5 px-4 py-3 text-sm font-medium text-green-700 dark:text-green-400">
           🎉 Thanks for upgrading! Your Premium features are unlocking now — if
           anything still looks locked, refresh in a moment.

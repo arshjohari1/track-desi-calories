@@ -7,7 +7,7 @@ import { createClient } from "~/lib/supabase/server";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; message?: string }>;
 }) {
   // Already signed in? There's nothing to do here — send them into the app.
   const supabase = await createClient();
@@ -18,7 +18,7 @@ export default async function LoginPage({
     redirect("/dashboard");
   }
 
-  const { error } = await searchParams;
+  const { error, message } = await searchParams;
 
   return (
     <main className="flex min-h-[calc(100vh-4.5rem)] items-center justify-center px-4">
@@ -30,6 +30,14 @@ export default async function LoginPage({
           </p>
         </div>
 
+        {message && (
+          <p
+            role="status"
+            className="rounded-lg border border-border bg-muted px-4 py-3 text-sm"
+          >
+            {message}
+          </p>
+        )}
         {error && (
           <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-800 dark:bg-red-950 dark:text-red-400">
             {error}

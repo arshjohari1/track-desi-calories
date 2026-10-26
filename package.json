@@ -9,6 +9,8 @@
     "format": "biome format --write .",
     "lint": "biome check .",
     "typecheck": "tsc --noEmit",
+    "test:release": "node --test scripts/release.test.mjs",
+    "check:services": "node --env-file=.env.local scripts/check-services.mjs",
     "preinstall": "npx only-allow pnpm"
   },
   "dependencies": {

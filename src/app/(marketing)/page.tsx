@@ -50,8 +50,8 @@ export default function Home() {
             <RotatingPhrase />
             <p className="text-lg text-muted-foreground max-w-md">
               Upload a meal photo, answer a few cooking questions, and get an
-              accurate calorie count for real desi food — from dal tadka to
-              chicken curry to aloo paratha.
+              calorie estimate for real desi food — from dal tadka to chicken
+              curry to aloo paratha.
             </p>
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
               <a
@@ -93,8 +93,8 @@ export default function Home() {
             Ready to track your desi meals?
           </h2>
           <p className="mb-8 text-base text-muted-foreground sm:mb-10 sm:text-lg">
-            Stop guessing calories for dal, roti, and sabzi. Get accurate counts
-            built around how South Asian food is actually cooked.
+            Track dal, roti, and sabzi with nutrition estimates built around how
+            South Asian food is actually cooked.
           </p>
           <a
             href="/signup"
@@ -113,7 +113,7 @@ export default function Home() {
             <span>TrackDesiCalories</span>
           </div>
           <p className="text-sm text-muted-foreground">
-            Desi food, accurately counted.
+            Everyday desi food. Thoughtful nutrition estimates.
           </p>
           {/* Privacy and Terms were plain <span>s with nothing behind them —
               they looked like links and did nothing, so they're gone until
