@@ -475,7 +475,7 @@ export default async function DashboardPage({
       </div>
 
       <p className="mt-8 text-center text-sm text-muted-foreground">
-        Accurate for South Asian home-cooked meals. Save once, log faster next
+        Estimates for South Asian home-cooked meals. Save once, log faster next
         time.
       </p>
     </div>

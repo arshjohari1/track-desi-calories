@@ -192,7 +192,7 @@ export default async function TrendsPage() {
             <div
               key={d.key}
               title={`${d.key}: ${d.calories.toLocaleString()} kcal`}
-              className="group flex-1"
+              className="group flex h-full flex-1 items-end"
             >
               <div
                 className="w-full rounded-t-sm bg-orange-600/80 transition-colors group-hover:bg-orange-600"

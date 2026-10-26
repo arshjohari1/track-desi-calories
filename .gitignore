@@ -13,6 +13,9 @@
 # testing
 /coverage
 
+# Local release screenshots and disposable test-account credentials
+/.codex/release/
+
 # next.js
 /.next/
 /out/

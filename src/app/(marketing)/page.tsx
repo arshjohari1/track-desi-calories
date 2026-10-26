@@ -49,7 +49,7 @@ export default function Home() {
             </span>
             <RotatingPhrase />
             <p className="text-lg text-muted-foreground max-w-md">
-              Upload a meal photo, answer a few cooking questions, and get an
+              Upload a meal photo, answer a few cooking questions, and get a
               calorie estimate for real desi food — from dal tadka to chicken
               curry to aloo paratha.
             </p>

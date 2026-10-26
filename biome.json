@@ -5,6 +5,7 @@
       "**",
       "!.next",
       "!.agents",
+      "!.codex/release",
       "!.claude/worktrees",
       "!supabase/.temp",
       "!supabase/.branches"
